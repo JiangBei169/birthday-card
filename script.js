@@ -1,6 +1,6 @@
 // 简化配置
 const CONFIG = {
-    password: '1234',
+    password: '1227',
     totalImages: 45,
     slideInterval: 5000
 };
