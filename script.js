@@ -1,8 +1,8 @@
 // 简化配置
 const CONFIG = {
-    password: '1234',
+    password: '1227',
     totalImages: 45,
-    slideInterval: 3000
+    slideInterval: 5000  // 增加显示时间到5秒
 };
 
 // 全局变量
@@ -20,6 +20,8 @@ function initializeSlideshow() {
         
         const img = document.createElement('img');
         img.src = `images/${i}.jpg`;
+        // 添加加载完成的类名
+        img.onload = () => img.classList.add('loaded');
         
         slide.appendChild(img);
         container.appendChild(slide);
@@ -34,14 +36,8 @@ function initializeSlideshow() {
 function checkAccess() {
     const input = document.getElementById('password-input').value;
     if (input === CONFIG.password) {
-        // 直接隐藏密码层并显示内容
         document.getElementById('password-layer').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
-        // 移除加载层
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        if (loadingOverlay) {
-            loadingOverlay.remove();
-        }
         initializeSlideshow();
     } else {
         const error = document.getElementById('password-error');
@@ -64,7 +60,18 @@ function showSlides(n) {
     }
     
     // 显示当前图片
-    slides[slideIndex-1].style.display = "block";
+    const currentSlide = slides[slideIndex-1];
+    currentSlide.style.display = "block";
+    
+    // 预加载下一张图片
+    const nextIndex = slideIndex % slides.length + 1;
+    const nextSlide = slides[nextIndex-1];
+    if (nextSlide) {
+        const nextImg = nextSlide.querySelector('img');
+        if (nextImg && !nextImg.classList.contains('loaded')) {
+            nextImg.src = nextImg.src; // 触发加载
+        }
+    }
 }
 
 // 切换图片
@@ -76,7 +83,13 @@ function changeSlide(n) {
 function startAutoSlide() {
     stopAutoSlide();
     slideInterval = setInterval(() => {
-        changeSlide(1);
+        const currentSlide = document.getElementsByClassName("slides")[slideIndex-1];
+        const currentImg = currentSlide.querySelector('img');
+        
+        // 只有当前图片加载完成后才切换到下一张
+        if (currentImg.classList.contains('loaded')) {
+            changeSlide(1);
+        }
     }, CONFIG.slideInterval);
 }
 
@@ -89,12 +102,6 @@ function stopAutoSlide() {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
-    // 移除加载层
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    if (loadingOverlay) {
-        loadingOverlay.remove();
-    }
-    
     // 密码输入框回车事件
     document.getElementById('password-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
