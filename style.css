@@ -1,57 +1,124 @@
-/* 在现有样式后添加以下内容 */
+/* 保留原有样式，添加以下内容 */
 
+.password-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #ff758c, #ff7eb3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.password-box {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    max-width: 90%;
+    width: 400px;
+}
+
+.password-box h2 {
+    margin-bottom: 25px;
+    color: #ff4081;
+    font-size: 24px;
+}
+
+.password-box input {
+    width: 100%;
+    padding: 12px;
+    margin: 15px 0;
+    border: 2px solid #ffb6c1;
+    border-radius: 10px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.password-box input:focus {
+    border-color: #ff4081;
+}
+
+.password-box button {
+    background: #ff4081;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.3s, background 0.3s;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.password-box button:hover {
+    background: #e91e63;
+    transform: translateY(-2px);
+}
+
+.password-error {
+    color: #ff0000;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+/* 轮播图样式优化 */
 .slideshow-container {
     max-width: 800px;
     position: relative;
     margin: 20px auto;
-    border-radius: 10px;
+    border-radius: 15px;
     overflow: hidden;
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
 .slides {
     display: none;
+    position: relative;
 }
 
 .slides img {
     width: 100%;
-    height: 300px;
+    height: 400px;
     object-fit: cover;
-    border-radius: 10px;
+    border-radius: 15px;
 }
 
-/* 前后按钮样式 */
-.prev, .next {
-    cursor: pointer;
+.fullscreen-btn {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    padding: 16px;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.5);
     color: white;
-    font-weight: bold;
-    font-size: 18px;
-    transition: 0.6s ease;
-    border-radius: 0 3px 3px 0;
-    user-select: none;
-    background-color: rgba(0,0,0,0.3);
+    padding: 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 3;
+    transition: background 0.3s;
 }
 
-.next {
-    right: 0;
-    border-radius: 3px 0 0 3px;
+.fullscreen-btn:hover {
+    background: rgba(0,0,0,0.8);
 }
 
-.prev:hover, .next:hover {
-    background-color: rgba(0,0,0,0.8);
+/* 全屏模式样式 */
+.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    background: black;
 }
 
-/* 淡入淡出动画 */
-.fade {
-    animation-name: fade;
-    animation-duration: 1.5s;
-}
-
-@keyframes fade {
-    from {opacity: .4} 
-    to {opacity: 1}
+.fullscreen img {
+    height: 100vh;
+    object-fit: contain;
 }
