@@ -16,8 +16,11 @@ function checkAccess() {
     if (input === CONFIG.password) {
         document.getElementById('password-layer').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
+        
+        // 清除所有烟花
+        document.getElementById('fireworks-container').innerHTML = '';
+        
         initializeSlideshow();
-        // 开始播放音乐
         if (CONFIG.autoPlayMusic) {
             playMusic();
         }
@@ -118,6 +121,12 @@ document.addEventListener('DOMContentLoaded', () => {
     music.addEventListener('pause', () => {
         musicToggle.classList.add('paused');
     });
+    
+    // 启动烟花效果
+    startFireworks();
+    
+    // 启动樱花效果
+    startSakura();
 });
 
 // 音乐控制
@@ -414,3 +423,67 @@ function initializeAll() {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', initializeAll);
+
+// 创建烟花
+function createFirework(x, y) {
+    const firework = document.createElement('div');
+    firework.className = 'firework';
+    firework.style.left = x + 'px';
+    firework.style.top = y + 'px';
+    
+    const colors = ['#ff69b4', '#ff1493', '#ff69b4', '#ffb6c1'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    
+    firework.style.setProperty('--color', color);
+    
+    document.getElementById('fireworks-container').appendChild(firework);
+    
+    setTimeout(() => {
+        firework.remove();
+    }, 1000);
+}
+
+// 创建樱花花瓣
+function createSakura() {
+    const sakura = document.createElement('div');
+    sakura.className = 'sakura';
+    
+    // 随机大小
+    const size = Math.random() * 10 + 5;
+    sakura.style.width = size + 'px';
+    sakura.style.height = size + 'px';
+    
+    // 随机起始位置
+    sakura.style.left = Math.random() * window.innerWidth + 'px';
+    sakura.style.top = '-10px';
+    
+    // 随机动画持续时间
+    const duration = Math.random() * 3 + 2;
+    sakura.style.animation = `fall ${duration}s linear forwards`;
+    
+    document.getElementById('sakura-container').appendChild(sakura);
+    
+    setTimeout(() => {
+        sakura.remove();
+    }, duration * 1000);
+}
+
+// 在密码输入界面随机生成烟花
+function startFireworks() {
+    setInterval(() => {
+        if (document.getElementById('password-layer').style.display !== 'none') {
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            createFirework(x, y);
+        }
+    }, 500);
+}
+
+// 持续生成樱花
+function startSakura() {
+    setInterval(() => {
+        if (document.getElementById('main-content').style.display !== 'none') {
+            createSakura();
+        }
+    }, 300);
+}
