@@ -1,7 +1,7 @@
 // 密码配置
 const CONFIG = {
-    password: '1234', // 修改为你的密码
-    authDuration: 24 * 60 * 60 * 1000, // 24小时有效期
+    password: '1227', // 修改为你的密码
+    authDuration: 1 * 60 * 60 * 1000, // 24小时有效期
     totalImages: 45 // 总图片数
 };
 
