@@ -1,67 +1,189 @@
-/* 保留原有样式，添加/修改以下内容 */
-
-/* 图片预加载容器 */
-.preload-container {
-    display: none;
+/* 基础样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-/* 轮播图优化 */
+body {
+    font-family: 'Arial', sans-serif;
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* 密码验证层 */
+.password-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.password-box {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    text-align: center;
+    box-shadow: 0 0 20px rgba(255, 17, 119, 0.3);
+}
+
+.heart-icon {
+    font-size: 40px;
+    margin-bottom: 20px;
+    animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+.glow-button {
+    background: linear-gradient(45deg, #ff1177, #ff4488);
+    border: none;
+    padding: 10px 30px;
+    color: white;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+    box-shadow: 0 0 10px rgba(255, 17, 119, 0.5);
+}
+
+.glow-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 17, 119, 0.8);
+}
+
+/* 主容器样式 */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+}
+
+/* 轮播图样式 */
 .slideshow-container {
-    max-width: 900px;
+    max-width: 800px;
     position: relative;
     margin: 20px auto;
-    border-radius: 20px;
+    border-radius: 15px;
     overflow: hidden;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     background: #000;
+    aspect-ratio: 4/3;
 }
 
 .slides {
     display: none;
     position: relative;
-    transition: transform 1s ease-in-out;
+    transition: all 0.5s ease-in-out;
 }
 
 .slides.active {
     display: block;
-    animation: slideEffect 1s ease-in-out;
-}
-
-@keyframes slideEffect {
-    from {
-        opacity: 0.4;
-        transform: scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+    animation: fadeIn 0.5s ease-in-out;
 }
 
 .slides img {
     width: 100%;
-    height: 500px;
+    height: 100%;
     object-fit: contain;
-    border-radius: 20px;
-    background: #000;
+    border-radius: 15px;
 }
 
-/* 加载进度条 */
-.loading-progress-container {
+/* 控制按钮样式 */
+.slide-controls {
     position: absolute;
-    bottom: 0;
+    bottom: 20px;
     left: 0;
-    width: 100%;
-    height: 4px;
-    background: rgba(255,255,255,0.2);
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
     z-index: 10;
 }
 
-.loading-progress {
+.control-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+}
+
+.control-btn:hover {
+    background: rgba(255,255,255,0.4);
+    transform: scale(1.1);
+}
+
+/* 加载指示器 */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
     height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #ff1177;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loading-progress {
+    width: 200px;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    margin-top: 20px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #ff1177, #ff4488);
     width: 0;
-    background: linear-gradient(90deg, #ff4081, #ff9100);
     transition: width 0.3s ease;
+}
+
+/* 动画效果 */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes heartbeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
 /* 音乐控制器 */
@@ -69,100 +191,252 @@
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 1000;
+    z-index: 100;
 }
 
-.music-control button {
-    background: rgba(255,255,255,0.9);
+.floating-btn {
+    background: rgba(255,255,255,0.1);
     border: none;
-    border-radius: 50%;
     width: 50px;
     height: 50px;
+    border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-}
-
-.music-control button:hover {
-    transform: scale(1.1);
+    backdrop-filter: blur(5px);
+    animation: floating 3s ease-in-out infinite;
 }
 
 .music-icon {
     font-size: 24px;
-    animation: musicRotate 3s linear infinite;
-}
-
-@keyframes musicRotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* 优化导航按钮 */
-.prev, .next {
-    cursor: pointer;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    padding: 16px;
     color: white;
-    font-weight: bold;
-    font-size: 24px;
-    transition: all 0.3s ease;
+}
+
+/* 生日蛋糕样式 */
+.cake {
+    position: relative;
+    width: 250px;
+    height: 200px;
+    margin: 40px auto;
+}
+
+.plate {
+    width: 270px;
+    height: 110px;
+    position: absolute;
+    bottom: -10px;
+    left: -10px;
+    background-color: #ccc;
     border-radius: 50%;
-    background: rgba(0,0,0,0.6);
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
+    box-shadow: 0 2px 0 #b3b3b3, 0 4px 0 #b3b3b3, 0 5px 40px rgba(0,0,0,0.5);
 }
 
-.next {
-    right: 20px;
+.cake .layer {
+    position: absolute;
+    width: 250px;
+    height: 40px;
+    border-radius: 50%;
 }
 
-.prev {
-    left: 20px;
+.layer-bottom { 
+    bottom: 0;
+    background-color: #ff99cc;
+    box-shadow: 0 2px 0px #ff80bf;
 }
 
-.prev:hover, .next:hover {
-    background: rgba(0,0,0,0.9);
-    transform: translateY(-50%) scale(1.1);
+.layer-middle { 
+    bottom: 35px;
+    background-color: #ff80bf;
+    box-shadow: 0 2px 0px #ff66b3;
 }
 
-/* 全屏模式优化 */
-.fullscreen {
+.layer-top { 
+    bottom: 70px;
+    background-color: #ff66b3;
+    box-shadow: 0 2px 0px #ff4da6;
+}
+
+.icing {
+    position: absolute;
+    top: 65px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background-color: #ffcce6;
+    box-shadow: 0 4px 0px #ffb3d9;
+}
+
+.candle {
+    position: absolute;
+    bottom: 70%;
+    left: 50%;
+    width: 16px;
+    height: 50px;
+    background: linear-gradient(#ff9999, #ff6666);
+    border-radius: 8px;
+    transform: translateX(-50%);
+}
+
+.flame {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    width: 16px;
+    height: 20px;
+    background: #ffd700;
+    border-radius: 8px 8px 0 0;
+    transform: translateX(-50%);
+    animation: flicker 1s ease-in-out infinite;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+    .slideshow-container {
+        max-width: 100%;
+        aspect-ratio: 3/4;
+        margin: 10px auto;
+    }
+
+    .control-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+
+    .cake {
+        transform: scale(0.8);
+    }
+
+    .message {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .neon-text {
+        font-size: 24px;
+    }
+
+    .loading-text {
+        font-size: 14px;
+    }
+}
+
+/* style.css 继续 */
+
+/* 霓虹文字效果 */
+.neon-text {
+    color: #fff;
+    text-shadow: 0 0 5px #fff,
+                 0 0 10px #fff,
+                 0 0 20px #ff1177,
+                 0 0 30px #ff1177,
+                 0 0 40px #ff1177;
+    animation: neon 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes neon {
+    from {
+        text-shadow: 0 0 5px #fff,
+                     0 0 10px #fff,
+                     0 0 20px #ff1177,
+                     0 0 30px #ff1177,
+                     0 0 40px #ff1177;
+    }
+    to {
+        text-shadow: 0 0 2.5px #fff,
+                     0 0 5px #fff,
+                     0 0 10px #ff1177,
+                     0 0 15px #ff1177,
+                     0 0 20px #ff1177;
+    }
+}
+
+/* 打字机效果 */
+.typing-text {
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 2px solid #fff;
+    animation: typing 3.5s steps(40, end),
+               blink-caret 0.75s step-end infinite;
+    margin: 0 auto;
+    max-width: fit-content;
+}
+
+@keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+}
+
+@keyframes blink-caret {
+    from, to { border-color: transparent }
+    50% { border-color: #fff }
+}
+
+/* 特效容器样式 */
+.sakura-container {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
+    pointer-events: none;
     z-index: 1000;
-    background: black;
+}
+
+#fireworks {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 999;
+}
+
+#particles-js {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+/* 全屏模式 */
+.fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    background: black !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
 }
 
 .fullscreen img {
-    height: 100vh;
-    object-fit: contain;
+    height: 100vh !important;
+    object-fit: contain !important;
 }
 
-/* 生日蛋糕动画优化 */
-.cake {
-    margin: 40px auto;
-    position: relative;
-    width: 200px;
-    height: 200px;
+.fullscreen-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    z-index: 10;
 }
 
-.flame {
-    animation: flicker 1s ease-in-out infinite alternate;
-}
-
-@keyframes flicker {
-    0% { transform: scale(1) rotate(-2deg); }
-    25% { transform: scale(1.1) rotate(2deg); }
-    50% { transform: scale(0.9) rotate(-1deg); }
-    75% { transform: scale(1.2) rotate(1deg); }
-    100% { transform: scale(1) rotate(0deg); }
+.fullscreen-btn:hover {
+    background: rgba(255,255,255,0.4);
+    transform: scale(1.1);
 }
