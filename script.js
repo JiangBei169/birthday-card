@@ -1,6 +1,6 @@
 // 配置
 const CONFIG = {
-    password: CryptoJS.SHA256('1227').toString(),
+    password: '1234',
     authDuration: 24 * 60 * 60 * 1000,
     totalImages: 45,
     slideInterval: 3000,
@@ -53,7 +53,7 @@ function handleLoadError(img, index, retries = CONFIG.retryTimes) {
             
             setTimeout(async () => {
                 try {
-                    img.src = ImageCrypto.getImageUrl(index); // 重新获取加密URL
+                    img.src = `./images/${index}.jpg`; // 重新获取图片路径
                     await new Promise((res, rej) => {
                         img.onload = res;
                         img.onerror = () => handleLoadError(img, index, retries - 1).then(res).catch(rej);
@@ -84,14 +84,14 @@ function checkLoadingComplete() {
     }
 }
 
-// 批量加载图片
+// 修改初始化函数
 function initializeSlideshow() {
     const container = document.getElementById('slides-container');
     let loadedCount = 0;
     const totalImages = CONFIG.totalImages;
     
-    // 立即更新初始状态
-    updateLoadingStatus(0, totalImages, '开始加载图片...');
+    console.log('Starting slideshow initialization...');
+    console.log(`Total images to load: ${totalImages}`);
     
     async function loadImage(index) {
         try {
@@ -99,37 +99,41 @@ function initializeSlideshow() {
             slide.className = 'slides fade';
             
             const img = new Image();
-            const url = ImageCrypto.getImageUrl(index);
+            const url = `./images/${index}.jpg`; // 直接使用图片路径
+            
+            console.log(`🔄 Attempting to load image ${index} from: ${url}`);
             
             return new Promise((resolve, reject) => {
                 img.onload = () => {
                     loadedCount++;
+                    console.log(`✅ Successfully loaded image ${index}`);
                     updateLoadingStatus(loadedCount, totalImages, `成功加载第 ${index} 张图片`);
                     slide.appendChild(img);
                     container.appendChild(slide);
                     resolve();
                 };
                 
-                img.onerror = () => {
-                    console.error(`Failed to load image ${index}`);
+                img.onerror = (e) => {
+                    console.error(`❌ Failed to load image ${index}:`, e);
+                    console.log(`Attempted URL: ${url}`);
                     reject(new Error(`Failed to load image ${index}`));
                 };
                 
-                // 设置图片源
-                console.log(`Loading image ${index} from ${url}`);
                 img.src = url;
             });
         } catch (error) {
-            console.error(`Error loading image ${index}:`, error);
+            console.error(`❌ Error in loadImage(${index}):`, error);
             throw error;
         }
     }
     
     async function loadAllImages() {
+        console.log('Starting to load all images...');
         const batchSize = CONFIG.batchSize;
         let currentIndex = 1;
         
         while (currentIndex <= totalImages) {
+            console.log(`Loading batch starting from index ${currentIndex}`);
             const batch = [];
             for (let i = 0; i < batchSize && currentIndex <= totalImages; i++) {
                 batch.push(loadImage(currentIndex));
@@ -138,18 +142,19 @@ function initializeSlideshow() {
             
             try {
                 await Promise.all(batch);
-                console.log(`Batch completed: ${currentIndex - batchSize} to ${currentIndex - 1}`);
+                console.log(`✅ Batch completed: ${currentIndex - batchSize} to ${currentIndex - 1}`);
             } catch (error) {
-                console.error('Batch error:', error);
+                console.error('❌ Batch error:', error);
             }
         }
         
+        console.log('All images processed. Checking completion...');
         checkLoadingComplete();
     }
     
     // 开始加载
     loadAllImages().catch(error => {
-        console.error('Loading failed:', error);
+        console.error('❌ Loading failed:', error);
         updateLoadingStatus(loadedCount, totalImages, '加载过程中遇到错误，请刷新重试');
     });
 }
@@ -296,7 +301,7 @@ class ImagePreloader {
     preloadImage(index) {
         return new Promise((resolve, reject) => {
             const img = new Image();
-            const url = ImageCrypto.getImageUrl(index);
+            const url = `./images/${index}.jpg`;
             
             img.onload = () => {
                 this.loadedImages++;
