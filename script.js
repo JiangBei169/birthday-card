@@ -1,5 +1,35 @@
 /* 在现有样式后添加以下内容 */
+// 轮播图功能
+let slideIndex = 1;
+showSlides(slideIndex);
 
+function changeSlide(n) {
+    showSlides(slideIndex += n);
+}
+
+function showSlides(n) {
+    let slides = document.getElementsByClassName("slides");
+    
+    if (n > slides.length) {
+        slideIndex = 1;
+    }
+    if (n < 1) {
+        slideIndex = slides.length;
+    }
+    
+    for (let i = 0; i < slides.length; i++) {
+        slides[i].style.display = "none";
+    }
+    
+    slides[slideIndex-1].style.display = "block";
+}
+
+// 自动播放
+setInterval(() => {
+    changeSlide(1);
+}, 3000); // 每3秒切换一次
+
+// 原有的 Firework 类代码保持不变...
 .slideshow-container {
     max-width: 800px;
     position: relative;
