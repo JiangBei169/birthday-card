@@ -1,49 +1,71 @@
 // 简化配置
 const CONFIG = {
-    password: '1227',
+    password: '1234',
     totalImages: 45,
-    slideInterval: 5000  // 增加显示时间到5秒
+    slideInterval: 5000
 };
 
 // 全局变量
 let slideIndex = 1;
 let slideInterval;
 
-// 简化的初始化函数
-function initializeSlideshow() {
-    const container = document.getElementById('slides-container');
-    
-    // 直接创建所有幻灯片容器
-    for (let i = 1; i <= CONFIG.totalImages; i++) {
-        const slide = document.createElement('div');
-        slide.className = 'slides fade';
-        
-        const img = document.createElement('img');
-        img.src = `images/${i}.jpg`;
-        // 添加加载完成的类名
-        img.onload = () => img.classList.add('loaded');
-        
-        slide.appendChild(img);
-        container.appendChild(slide);
-    }
-    
-    // 显示第一张图片并开始自动播放
-    showSlides(1);
-    startAutoSlide();
-}
-
 // 检查访问权限
 function checkAccess() {
     const input = document.getElementById('password-input').value;
     if (input === CONFIG.password) {
+        // 直接隐藏密码层和加载层
         document.getElementById('password-layer').style.display = 'none';
+        document.getElementById('loadingOverlay').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
-        initializeSlideshow();
+        
+        // 直接开始显示图片
+        showFirstImage();
     } else {
         const error = document.getElementById('password-error');
         if (error) {
             error.textContent = '密码错误，请重试';
         }
+    }
+}
+
+// 显示第一张图片并初始化
+function showFirstImage() {
+    const container = document.getElementById('slides-container');
+    
+    // 清空容器
+    container.innerHTML = '';
+    
+    // 只创建第一张图片
+    const slide = document.createElement('div');
+    slide.className = 'slides fade';
+    
+    const img = document.createElement('img');
+    img.src = `images/1.jpg`;
+    img.onload = () => {
+        slide.appendChild(img);
+        container.appendChild(slide);
+        slide.style.display = 'block';
+        
+        // 图片加载成功后，开始加载其他图片
+        loadRemainingImages();
+        startAutoSlide();
+    };
+}
+
+// 加载剩余图片
+function loadRemainingImages() {
+    const container = document.getElementById('slides-container');
+    
+    for (let i = 2; i <= CONFIG.totalImages; i++) {
+        const slide = document.createElement('div');
+        slide.className = 'slides fade';
+        
+        const img = document.createElement('img');
+        img.src = `images/${i}.jpg`;
+        
+        slide.appendChild(img);
+        container.appendChild(slide);
+        slide.style.display = 'none';
     }
 }
 
@@ -54,24 +76,11 @@ function showSlides(n) {
     if (n > slides.length) slideIndex = 1;
     if (n < 1) slideIndex = slides.length;
     
-    // 隐藏所有图片
     for (let slide of slides) {
         slide.style.display = "none";
     }
     
-    // 显示当前图片
-    const currentSlide = slides[slideIndex-1];
-    currentSlide.style.display = "block";
-    
-    // 预加载下一张图片
-    const nextIndex = slideIndex % slides.length + 1;
-    const nextSlide = slides[nextIndex-1];
-    if (nextSlide) {
-        const nextImg = nextSlide.querySelector('img');
-        if (nextImg && !nextImg.classList.contains('loaded')) {
-            nextImg.src = nextImg.src; // 触发加载
-        }
-    }
+    slides[slideIndex-1].style.display = "block";
 }
 
 // 切换图片
@@ -83,13 +92,7 @@ function changeSlide(n) {
 function startAutoSlide() {
     stopAutoSlide();
     slideInterval = setInterval(() => {
-        const currentSlide = document.getElementsByClassName("slides")[slideIndex-1];
-        const currentImg = currentSlide.querySelector('img');
-        
-        // 只有当前图片加载完成后才切换到下一张
-        if (currentImg.classList.contains('loaded')) {
-            changeSlide(1);
-        }
+        changeSlide(1);
     }, CONFIG.slideInterval);
 }
 
