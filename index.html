@@ -27,6 +27,23 @@
         </div>
     </div>
 
+
+    <!-- 在 main-content div 前添加 -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">正在加载美好回忆... 0%</div>
+        <div class="loading-progress">
+            <div id="loadingProgress" class="progress-bar"></div>
+        </div>
+        <div class="loading-tips">
+            <p>首次加载可能需要一点时间，请耐心等待...</p>
+            <p id="loadingDetail">正在加载第 0 张，共 45 张</p>
+            <p id="loadingStatus"></p>
+        </div>
+    </div>
+</div>
+    
     <!-- 主内容区域 -->
     <div id="main-content" class="container" style="display: none;">
         <!-- 加载指示器 -->
