@@ -33,11 +33,12 @@ function initializeSlideshow() {
         slide.className = 'slides fade';
         
         const img = new Image();
-        const url = `./images/${currentImage}.jpg`;
+        const url = `images/${currentImage}.jpg`;
         
-        console.log(`Loading image ${currentImage}`);
+        console.log(`Attempting to load image: ${url}`);
         
         img.onload = () => {
+            console.log(`Successfully loaded image ${currentImage}`);
             imagesLoaded++;
             updateLoadingStatus(imagesLoaded, CONFIG.totalImages);
             slide.appendChild(img);
@@ -45,14 +46,15 @@ function initializeSlideshow() {
             
             // 加载下一张图片
             currentImage++;
-            setTimeout(loadNextImage, 100); // 添加小延迟，避免阻塞
+            setTimeout(loadNextImage, 200); // 增加延迟到 200ms
         };
         
-        img.onerror = () => {
-            console.error(`Failed to load image ${currentImage}`);
+        img.onerror = (error) => {
+            console.error(`Failed to load image ${currentImage}:`, error);
+            console.error(`Attempted URL: ${url}`);
             // 即使失败也继续加载下一张
             currentImage++;
-            setTimeout(loadNextImage, 100);
+            setTimeout(loadNextImage, 200);
         };
         
         img.src = url;
