@@ -5,77 +5,95 @@ const CONFIG = {
     totalImages: 45,
     slideInterval: 3000,
     preloadImages: true,
-    batchSize: 5,  // 每批加载的图片数量
-    loadingTimeout: 30000,  // 加载超时时间（30秒）
-    retryTimes: 3,  // 加载失败重试次数
-    retryDelay: 1000  // 重试延迟时间（毫秒）
+    batchSize: 5,
+    loadingTimeout: 30000,
+    retryTimes: 3,
+    retryDelay: 1000
 };
 
 // 全局变量
 let slideIndex = 1;
 let slideInterval;
 let imagesLoaded = 0;
-let loadingStartTime = 0;
 
-// 加载状态更新
-function updateLoadingStatus(loaded, total, status = '') {
-    const progress = Math.floor((loaded / total) * 100);
-    const progressBar = document.getElementById('loadingProgress');
-    const loadingText = document.getElementById('loadingText');
-    const loadingDetail = document.getElementById('loadingDetail');
-    const loadingStatus = document.getElementById('loadingStatus');
+function initializeSlideshow() {
+    const container = document.getElementById('slides-container');
+    let currentImage = 1;
     
+    console.log('Starting slideshow initialization...');
+    
+    function loadNextImage() {
+        if (currentImage > CONFIG.totalImages) {
+            console.log('All images loaded');
+            checkLoadingComplete();
+            return;
+        }
+        
+        const slide = document.createElement('div');
+        slide.className = 'slides fade';
+        
+        const img = new Image();
+        const url = `./images/${currentImage}.jpg`;
+        
+        console.log(`Loading image ${currentImage}`);
+        
+        img.onload = () => {
+            imagesLoaded++;
+            updateLoadingStatus(imagesLoaded, CONFIG.totalImages);
+            slide.appendChild(img);
+            container.appendChild(slide);
+            
+            // 加载下一张图片
+            currentImage++;
+            setTimeout(loadNextImage, 100); // 添加小延迟，避免阻塞
+        };
+        
+        img.onerror = () => {
+            console.error(`Failed to load image ${currentImage}`);
+            // 即使失败也继续加载下一张
+            currentImage++;
+            setTimeout(loadNextImage, 100);
+        };
+        
+        img.src = url;
+    }
+    
+    // 开始加载第一张图片
+    loadNextImage();
+}
+
+function updateLoadingStatus(loaded, total) {
+    const progress = Math.floor((loaded / total) * 100);
+    
+    // 更新进度条
+    const progressBar = document.getElementById('loadingProgress');
     if (progressBar) {
         progressBar.style.width = `${progress}%`;
     }
     
+    // 更新加载文本
+    const loadingText = document.getElementById('loadingText');
     if (loadingText) {
         loadingText.textContent = `正在加载美好回忆... ${progress}%`;
     }
     
+    // 更新详细信息
+    const loadingDetail = document.getElementById('loadingDetail');
     if (loadingDetail) {
         loadingDetail.textContent = `正在加载第 ${loaded} 张，共 ${total} 张`;
     }
     
+    // 更新已加载百分比
+    const loadingStatus = document.getElementById('loadingStatus');
     if (loadingStatus) {
-        loadingStatus.textContent = status || `已加载 ${progress}%`;
+        loadingStatus.textContent = `已加载 ${progress}%`;
     }
     
-    console.log(`Loading progress: ${progress}%, ${loaded}/${total} images loaded`);
+    console.log(`Progress: ${loaded}/${total} (${progress}%)`);
 }
 
-// 图片加载错误处理
-function handleLoadError(img, index, retries = CONFIG.retryTimes) {
-    return new Promise((resolve, reject) => {
-        if (retries > 0) {
-            const status = `图片 ${index} 加载失败，${retries} 次重试机会`;
-            updateLoadingStatus(imagesLoaded, CONFIG.totalImages, status);
-            
-            setTimeout(async () => {
-                try {
-                    img.src = `./images/${index}.jpg`; // 重新获取图片路径
-                    await new Promise((res, rej) => {
-                        img.onload = res;
-                        img.onerror = () => handleLoadError(img, index, retries - 1).then(res).catch(rej);
-                    });
-                    resolve();
-                } catch (err) {
-                    reject(err);
-                }
-            }, CONFIG.retryDelay);
-        } else {
-            console.error(`Failed to load image ${index} after all retries`);
-            img.src = 'placeholder.jpg';
-            reject(new Error(`Image ${index} failed to load`));
-        }
-    });
-}
-
-// 检查加载完成状态
 function checkLoadingComplete() {
-    console.log('Checking loading completion...');
     if (imagesLoaded >= CONFIG.totalImages) {
-        console.log('All images loaded, hiding loading overlay');
         const loadingOverlay = document.getElementById('loadingOverlay');
         if (loadingOverlay) {
             loadingOverlay.style.opacity = '0';
@@ -88,111 +106,23 @@ function checkLoadingComplete() {
     }
 }
 
-// 修改初始化函数
-function initializeSlideshow() {
-    const container = document.getElementById('slides-container');
-    let loadedCount = 0;
-    const totalImages = CONFIG.totalImages;
-    
-    console.log('Starting slideshow initialization...');
-    console.log(`Total images to load: ${totalImages}`);
-    
-    async function loadImage(index) {
-        try {
-            const slide = document.createElement('div');
-            slide.className = 'slides fade';
-            
-            const img = new Image();
-            const url = `./images/${index}.jpg`;
-            
-            console.log(`🔄 Loading image ${index} from: ${url}`);
-            
-            return new Promise((resolve, reject) => {
-                img.onload = () => {
-                    loadedCount++;
-                    console.log(`✅ Image ${index} loaded successfully`);
-                    updateLoadingStatus(loadedCount, totalImages, `成功加载第 ${index} 张图片`);
-                    slide.appendChild(img);
-                    container.appendChild(slide);
-                    resolve();
-                };
-                
-                img.onerror = (e) => {
-                    console.error(`❌ Image ${index} failed to load:`, e);
-                    reject(new Error(`Failed to load image ${index}`));
-                };
-                
-                img.src = url;
-            });
-        } catch (error) {
-            console.error(`Error loading image ${index}:`, error);
-            throw error;
-        }
-    }
-    
-    async function loadBatch(startIndex, endIndex) {
-        console.log(`Loading batch from ${startIndex} to ${endIndex}`);
-        const promises = [];
-        
-        for (let i = startIndex; i <= endIndex; i++) {
-            promises.push(loadImage(i));
-        }
-        
-        try {
-            await Promise.all(promises);
-            console.log(`✅ Batch ${startIndex}-${endIndex} completed`);
-            
-            // 如果还有更多图片要加载，继续下一批
-            if (endIndex < totalImages) {
-                const nextStart = endIndex + 1;
-                const nextEnd = Math.min(nextStart + CONFIG.batchSize - 1, totalImages);
-                // 使用 setTimeout 来避免阻塞
-                setTimeout(() => {
-                    loadBatch(nextStart, nextEnd);
-                }, 100);
-            } else {
-                console.log('✅ All images loaded successfully');
-                checkLoadingComplete();
-            }
-        } catch (error) {
-            console.error(`❌ Error in batch ${startIndex}-${endIndex}:`, error);
-            // 尝试继续加载下一批
-            if (endIndex < totalImages) {
-                const nextStart = endIndex + 1;
-                const nextEnd = Math.min(nextStart + CONFIG.batchSize - 1, totalImages);
-                setTimeout(() => {
-                    loadBatch(nextStart, nextEnd);
-                }, 100);
-            }
-        }
-    }
-    
-    // 开始加载第一批
-    const firstBatchEnd = Math.min(CONFIG.batchSize, totalImages);
-    loadBatch(1, firstBatchEnd);
-}
-
-// 轮播控制
-function changeSlide(n) {
-    showSlides(slideIndex += n);
-}
-
 function showSlides(n) {
     const slides = document.getElementsByClassName("slides");
     
     if (n > slides.length) slideIndex = 1;
     if (n < 1) slideIndex = slides.length;
     
-    Array.from(slides).forEach(slide => {
+    for (let slide of slides) {
         slide.style.display = "none";
-    });
+    }
     
     slides[slideIndex-1].style.display = "block";
-    document.querySelector('.slide-number').textContent = 
-        `${slideIndex} / ${CONFIG.totalImages}`;
 }
 
-// 自动轮播
+function changeSlide(n) {
+    showSlides(slideIndex += n);
+}
+
 function startAutoSlide() {
     stopAutoSlide();
     slideInterval = setInterval(() => {
@@ -203,6 +133,40 @@ function startAutoSlide() {
 function stopAutoSlide() {
     if (slideInterval) {
         clearInterval(slideInterval);
+    }
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', () => {
+    // 密码输入框回车事件
+    document.getElementById('password-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            checkAccess();
+        }
+    });
+    
+    // 轮播图事件
+    const slideshowContainer = document.querySelector('.slideshow-container');
+    if (slideshowContainer) {
+        slideshowContainer.addEventListener('mouseenter', stopAutoSlide);
+        slideshowContainer.addEventListener('mouseleave', startAutoSlide);
+    }
+});
+
+// 检查访问权限
+function checkAccess() {
+    const input = document.getElementById('password-input').value;
+    if (input === CONFIG.password) {
+        localStorage.setItem('auth_time', Date.now());
+        document.getElementById('password-layer').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        initializeSlideshow();
+    } else {
+        const error = document.getElementById('password-error');
+        if (error) {
+            error.textContent = '密码错误，请重试';
+            error.classList.add('animate__animated', 'animate__shakeX');
+        }
     }
 }
 
@@ -497,19 +461,3 @@ function initializeAll() {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', initializeAll);
-
-function checkAccess() {
-    const input = document.getElementById('password-input').value;
-    const hashedInput = CryptoJS.SHA256(input).toString();
-    
-    if (hashedInput === CONFIG.password) {
-        localStorage.setItem('auth_time', Date.now());
-        document.getElementById('password-layer').style.display = 'none';
-        document.getElementById('main-content').style.display = 'block';
-        initializeSlideshow();
-    } else {
-        const error = document.getElementById('password-error');
-        error.textContent = '密码错误，请重试';
-        error.classList.add('animate__animated', 'animate__shakeX');
-    }
-}
