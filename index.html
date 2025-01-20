@@ -10,6 +10,23 @@
     <div class="container">
         <div class="birthday-card">
             <h1>生日快乐！</h1>
+            
+            <!-- 添加轮播图容器 -->
+            <div class="slideshow-container">
+                <div class="slides fade">
+                    <img src="./images/1.jpg" alt="生日照片1">
+                </div>
+                <div class="slides fade">
+                    <img src="./images/2.jpg" alt="生日照片2">
+                </div>
+                <div class="slides fade">
+                    <img src="./images/3.jpg" alt="生日照片3">
+                </div>
+                <!-- 添加前后按钮 -->
+                <a class="prev" onclick="changeSlide(-1)">❮</a>
+                <a class="next" onclick="changeSlide(1)">❯</a>
+            </div>
+            
             <div class="cake">
                 <div class="plate"></div>
                 <div class="layer"></div>
@@ -18,13 +35,6 @@
                     <div class="flame"></div>
                 </div>
             </div>
-
-            
-            <!-- 暂时隐藏照片部分
-            <div class="photo">
-                <img src="birthday.jpg" alt="生日照片">
-            </div>
-            -->
             
             <div class="message">
                 <p>愿你的生日充满欢乐和惊喜！</p>
