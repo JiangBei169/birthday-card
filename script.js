@@ -1,11 +1,25 @@
 // 配置
 const CONFIG = {
-    password: '1227',  // 设置你的密码
-    authDuration: 1 * 60 * 60 * 1000,  // 登录有效期：24小时
+    password: '1234',  // 设置访问密码
+    authDuration: 24 * 60 * 60 * 1000,  // 登录有效期：24小时
     totalImages: 45,  // 图片总数
-    slideInterval: 5000,  // 轮播间隔：5秒
-    preloadImages: true  // 是否预加载图片
+    slideInterval: 3000,  // 轮播间隔：3秒
+    preloadImages: true,  // 是否预加载图片
+    effects: {
+        sakura: true,    // 樱花效果
+        fireworks: true, // 烟花效果
+        particles: true  // 粒子效果
+    },
+    messages: {
+        typing1: "愿你的生日充满欢乐和惊喜！",
+        typing2: "愿所有美好都与你相伴！"
+    }
 };
+
+// 全局变量
+let slideIndex = 1;
+let slideInterval;
+let imagesLoaded = 0;
 
 // 密码验证功能
 function checkAccess() {
@@ -18,8 +32,7 @@ function checkAccess() {
         document.getElementById('main-content').style.display = 'block';
         
         // 初始化内容
-        initializeSlideshow();
-        new Firework();
+        initializeContent();
         
         // 开始播放音乐
         const music = document.getElementById('bgMusic');
@@ -34,51 +47,109 @@ function checkAccess() {
         errorElement.style.display = 'block';
         document.getElementById('password-input').value = '';
         
-        // 3秒后隐藏错误信息
         setTimeout(() => {
             errorElement.style.display = 'none';
         }, 3000);
     }
 }
 
-// 检查之前的登录状态
-function checkPreviousLogin() {
-    const lastAuth = localStorage.getItem('birthday_auth');
-    const authHash = localStorage.getItem('birthday_auth_hash');
+// script.js 继续
+
+// 初始化所有内容
+function initializeContent() {
+    // 显示加载overlay
+    document.getElementById('loadingOverlay').style.display = 'flex';
     
-    if (lastAuth && authHash) {
-        const now = Date.now();
-        const authTime = parseInt(lastAuth);
-        
-        if (now - authTime < CONFIG.authDuration && 
-            authHash === btoa(CONFIG.password)) {
-            // 之前的登录仍然有效
-            document.getElementById('password-layer').style.display = 'none';
-            document.getElementById('main-content').style.display = 'block';
-            initializeSlideshow();
-            new Firework();
-            return;
-        }
+    // 初始化特效
+    if (CONFIG.effects.particles) {
+        initParticles();
+    }
+    if (CONFIG.effects.sakura) {
+        initSakura();
+    }
+    if (CONFIG.effects.fireworks) {
+        new Firework();
     }
     
-    // 清除过期或无效的认证
-    localStorage.removeItem('birthday_auth');
-    localStorage.removeItem('birthday_auth_hash');
-    document.getElementById('password-layer').style.display = 'flex';
+    // 初始化轮播图
+    initializeSlideshow();
+    
+    // 添加打字机效果
+    const messageElement1 = document.querySelector('.typing-text');
+    const messageElement2 = document.querySelector('.typing-text-2');
+    typeMessage(messageElement1, CONFIG.messages.typing1);
+    setTimeout(() => {
+        typeMessage(messageElement2, CONFIG.messages.typing2);
+    }, 4000);
 }
 
-// 图片预加载
-function preloadImages() {
-    const container = document.createElement('div');
-    container.className = 'preload-container';
+// 图片预加载和轮播初始化
+function initializeSlideshow() {
+    const container = document.getElementById('slides-container');
+    const progressBar = document.getElementById('loadingProgress');
     
     for (let i = 1; i <= CONFIG.totalImages; i++) {
+        const slide = document.createElement('div');
+        slide.className = 'slides fade';
+        
         const img = new Image();
-        img.src = `./images/${i}.jpg`;
-        container.appendChild(img);
+        img.onload = () => {
+            imagesLoaded++;
+            progressBar.style.width = `${(imagesLoaded/CONFIG.totalImages)*100}%`;
+            
+            if (imagesLoaded === CONFIG.totalImages) {
+                document.getElementById('loadingOverlay').style.display = 'none';
+                startAutoSlide();
+            }
+        };
+        
+        // 使用加密的图片URL
+        if (CONFIG.imageEncryption && CONFIG.imageEncryption.enabled) {
+            img.src = ImageCrypto.getImageUrl(i);
+        } else {
+            img.src = `./images/${i}.jpg`;
+        }
+        
+        img.alt = `生日照片${i}`;
+        slide.appendChild(img);
+        container.appendChild(slide);
     }
     
-    document.body.appendChild(container);
+    showSlides(slideIndex);
+}
+
+// 轮播控制
+function changeSlide(n) {
+    showSlides(slideIndex += n);
+}
+
+function showSlides(n) {
+    const slides = document.getElementsByClassName("slides");
+    
+    if (n > slides.length) slideIndex = 1;
+    if (n < 1) slideIndex = slides.length;
+    
+    Array.from(slides).forEach(slide => {
+        slide.style.display = "none";
+    });
+    
+    slides[slideIndex-1].style.display = "block";
+    document.querySelector('.slide-number').textContent = 
+        `${slideIndex} / ${CONFIG.totalImages}`;
+}
+
+// 自动轮播
+function startAutoSlide() {
+    stopAutoSlide();
+    slideInterval = setInterval(() => {
+        changeSlide(1);
+    }, CONFIG.slideInterval);
+}
+
+function stopAutoSlide() {
+    if (slideInterval) {
+        clearInterval(slideInterval);
+    }
 }
 
 // 音乐控制
@@ -95,79 +166,7 @@ function toggleMusic() {
     }
 }
 
-// 轮播图功能
-let slideIndex = 1;
-let slideInterval;
-let imagesLoaded = 0;
-
-function initializeSlideshow() {
-    const container = document.getElementById('slides-container');
-    const progressBar = document.getElementById('loadingProgress');
-    
-    for (let i = 1; i <= CONFIG.totalImages; i++) {
-        const slide = document.createElement('div');
-        slide.className = 'slides fade';
-        
-        const img = new Image();
-        img.onload = () => {
-            imagesLoaded++;
-            progressBar.style.width = `${(imagesLoaded/CONFIG.totalImages)*100}%`;
-            
-            if (imagesLoaded === CONFIG.totalImages) {
-                progressBar.style.display = 'none';
-                startAutoSlide();
-            }
-        };
-        
-        img.src = `./images/${i}.jpg`;
-        img.alt = `生日照片${i}`;
-        
-        slide.appendChild(img);
-        container.appendChild(slide);
-    }
-    
-    showSlides(slideIndex);
-}
-
-function changeSlide(n) {
-    showSlides(slideIndex += n);
-}
-
-function showSlides(n) {
-    const slides = document.getElementsByClassName("slides");
-    
-    if (n > slides.length) slideIndex = 1;
-    if (n < 1) slideIndex = slides.length;
-    
-    // 移除所有活动类
-    Array.from(slides).forEach(slide => {
-        slide.style.display = "none";
-        slide.classList.remove('active');
-    });
-    
-    // 添加新的活动类
-    slides[slideIndex-1].style.display = "block";
-    slides[slideIndex-1].classList.add('active');
-    
-    document.querySelector('.slide-number').textContent = 
-        `${slideIndex} / ${CONFIG.totalImages}`;
-}
-
-function startAutoSlide() {
-    stopAutoSlide();
-    slideInterval = setInterval(() => {
-        // 只有当所有图片都加载完成时才自动滚动
-        if (imagesLoaded === CONFIG.totalImages) {
-            changeSlide(1);
-        }
-    }, CONFIG.slideInterval);
-}
-
-function stopAutoSlide() {
-    if (slideInterval) clearInterval(slideInterval);
-}
-
-// 全屏功能
+// 全屏控制
 function toggleFullscreen() {
     const container = document.querySelector('.slideshow-container');
     if (!document.fullscreenElement) {
@@ -179,6 +178,48 @@ function toggleFullscreen() {
     }
 }
 
+// 特效初始化
+function initParticles() {
+    particlesJS('particles-js', {
+        particles: {
+            number: { value: 80 },
+            color: { value: '#ff1177' },
+            shape: { type: 'circle' },
+            opacity: {
+                value: 0.5,
+                random: true
+            },
+            size: {
+                value: 3,
+                random: true
+            },
+            move: {
+                enable: true,
+                speed: 2,
+                direction: 'none',
+                random: true,
+                out_mode: 'out'
+            }
+        }
+    });
+}
+
+function initSakura() {
+    new Sakura('.sakura-container', {
+        colors: [
+            {
+                gradientColorStart: 'rgba(255, 183, 197, 0.9)',
+                gradientColorEnd: 'rgba(255, 197, 208, 0.9)',
+                gradientColorDegree: 120,
+            }
+        ],
+        delay: 200,
+        maxSize: 14,
+        minSize: 10,
+        quantity: 20
+    });
+}
+
 // 烟花效果类
 class Firework {
     constructor() {
@@ -187,114 +228,30 @@ class Firework {
         this.particles = [];
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
-        this.createFireworkInterval = setInterval(() => this.createRandomFirework(), 800);
+        this.createFireworkInterval = setInterval(() => this.createRandomFirework(), 1500);
         this.animate();
     }
 
-    resizeCanvas() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-    }
-
-    createRandomFirework() {
-        const x = Math.random() * this.canvas.width;
-        const y = this.canvas.height + 10;
-        const targetY = Math.random() * (this.canvas.height * 0.5);
-        this.createFirework(x, y, x, targetY);
-    }
-
-    createFirework(x, y, targetX, targetY) {
-        const particles = [];
-        const angle = Math.atan2(targetY - y, targetX - x);
-        const speed = 8;
-        const velocity = {
-            x: Math.cos(angle) * speed,
-            y: Math.sin(angle) * speed
-        };
-
-        particles.push({
-            x, y,
-            targetX, targetY,
-            velocity,
-            type: 'launcher',
-            color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-            life: 1
-        });
-
-        this.particles.push(...particles);
-    }
-
-    explode(x, y) {
-        const particles = [];
-        const particleCount = 150;
-        const angleIncrement = (Math.PI * 2) / particleCount;
-
-        for (let i = 0; i < particleCount; i++) {
-            const angle = angleIncrement * i;
-            const speed = 3 + Math.random() * 3;
-            particles.push({
-                x, y,
-                velocity: {
-                    x: Math.cos(angle) * speed,
-                    y: Math.sin(angle) * speed
-                },
-                type: 'explosion',
-                color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-                life: 1,
-                size: 3
-            });
-        }
-
-        this.particles.push(...particles);
-    }
-
-    animate() {
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        this.particles.forEach((particle, index) => {
-            if (particle.type === 'launcher') {
-                particle.x += particle.velocity.x;
-                particle.y += particle.velocity.y;
-                particle.velocity.y += 0.1;
-
-                if (Math.abs(particle.x - particle.targetX) < 5 && 
-                    Math.abs(particle.y - particle.targetY) < 5) {
-                    this.explode(particle.x, particle.y);
-                    this.particles.splice(index, 1);
-                }
-            } else {
-                particle.x += particle.velocity.x;
-                particle.y += particle.velocity.y;
-                particle.velocity.y += 0.1;
-                particle.life -= 0.02;
-
-                if (particle.life <= 0) {
-                    this.particles.splice(index, 1);
-                    return;
-                }
-
-                this.ctx.fillStyle = particle.color;
-                this.ctx.globalAlpha = particle.life;
-                this.ctx.beginPath();
-                this.ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-                this.ctx.fill();
-                this.ctx.globalAlpha = 1;
-            }
-        });
-
-        requestAnimationFrame(() => this.animate());
-    }
+    // ... (烟花效果的其他方法保持不变)
 }
 
-// 初始化
-document.addEventListener('DOMContentLoaded', () => {
-    // 预加载图片
-    if (CONFIG.preloadImages) {
-        preloadImages();
+// 打字机效果
+function typeMessage(element, text, speed = 100) {
+    let i = 0;
+    element.innerHTML = '';
+    function type() {
+        if (i < text.length) {
+            element.innerHTML += text.charAt(i);
+            i++;
+            setTimeout(type, speed);
+        }
     }
-    
-    // 密码输入框事件
+    type();
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', () => {
+    // 密码输入框回车事件
     document.getElementById('password-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             checkAccess();
@@ -308,8 +265,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 检查登录状态
     checkPreviousLogin();
-    
-    // 自动播放音乐
-    const music = document.getElementById('bgMusic');
-    music.volume = 0.5; // 设置音量为50%
 });
