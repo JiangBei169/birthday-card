@@ -1,7 +1,7 @@
 // 配置
 const CONFIG = {
     password: CryptoJS.SHA256('1227').toString(),
-    authDuration: 1 * 60 * 60 * 1000,
+    authDuration: 24 * 60 * 60 * 1000,
     totalImages: 45,
     slideInterval: 3000,
     preloadImages: true,
@@ -19,37 +19,30 @@ let loadingStartTime = 0;
 
 // 加载状态更新
 function updateLoadingStatus(loaded, total, status = '') {
-    const progress = (loaded / total) * 100;
+    const progress = Math.floor((loaded / total) * 100);
     const progressBar = document.getElementById('loadingProgress');
     const loadingText = document.getElementById('loadingText');
     const loadingDetail = document.getElementById('loadingDetail');
     const loadingStatus = document.getElementById('loadingStatus');
     
-    // 更新进度条
-    progressBar.style.width = `${progress}%`;
-    
-    // 更新加载文本
-    loadingText.textContent = `正在加载美好回忆... ${Math.round(progress)}%`;
-    
-    // 更新详细信息
-    loadingDetail.textContent = `正在加载第 ${loaded} 张，共 ${total} 张`;
-    
-    // 更新状态信息
-    if (status) {
-        loadingStatus.textContent = status;
+    // 确保元素存在
+    if (progressBar) {
+        progressBar.style.width = `${progress}%`;
     }
     
-    // 计算加载速度和剩余时间
-    if (loadingStartTime === 0) {
-        loadingStartTime = Date.now();
-    } else {
-        const elapsed = (Date.now() - loadingStartTime) / 1000;
-        const speed = loaded / elapsed;
-        const remaining = (total - loaded) / speed;
-        if (remaining > 0) {
-            loadingStatus.textContent = 
-                `预计还需 ${Math.round(remaining)} 秒完成加载`;
-        }
+    if (loadingText) {
+        loadingText.textContent = `正在加载美好回忆... ${progress}%`;
+    }
+    
+    if (loadingDetail) {
+        loadingDetail.textContent = `正在加载第 ${loaded} 张，共 ${total} 张`;
+    }
+    
+    // 添加调试日志
+    console.log(`Loading progress: ${progress}%, Loaded: ${loaded}, Total: ${total}`);
+    
+    if (status && loadingStatus) {
+        loadingStatus.textContent = status;
     }
 }
 
@@ -82,12 +75,14 @@ function handleLoadError(img, index, retries = CONFIG.retryTimes) {
 
 // 检查加载完成状态
 function checkLoadingComplete() {
-    if (imagesLoaded === CONFIG.totalImages) {
+    if (imagesLoaded >= CONFIG.totalImages) {
         const loadingOverlay = document.getElementById('loadingOverlay');
-        loadingOverlay.style.opacity = '0';
-        setTimeout(() => {
-            loadingOverlay.style.display = 'none';
-        }, 500);
+        if (loadingOverlay) {
+            loadingOverlay.style.opacity = '0';
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+            }, 500);
+        }
         startAutoSlide();
     }
 }
@@ -95,75 +90,60 @@ function checkLoadingComplete() {
 // 批量加载图片
 function initializeSlideshow() {
     const container = document.getElementById('slides-container');
-    let currentBatch = 0;
+    let loadedCount = 0;
     
-    // 使用 IntersectionObserver 实现懒加载
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                if (img.dataset.src) {
-                    img.src = img.dataset.src;
-                    img.removeAttribute('data-src');
-                    observer.unobserve(img);
-                }
-            }
-        });
-    });
-
-    function loadImageBatch() {
-        const start = currentBatch * CONFIG.batchSize + 1;
-        const end = Math.min(start + CONFIG.batchSize - 1, CONFIG.totalImages);
-        
-        updateLoadingStatus(imagesLoaded, CONFIG.totalImages, 
-            `正在加载第 ${start} - ${end} 批图片`);
-        
-        for (let i = start; i <= end; i++) {
+    // 重置加载状态
+    imagesLoaded = 0;
+    loadingStartTime = Date.now();
+    
+    function loadImage(index) {
+        return new Promise((resolve, reject) => {
             const slide = document.createElement('div');
             slide.className = 'slides fade';
             
             const img = new Image();
-            img.dataset.src = ImageCrypto.getImageUrl(i); // 使用加密的URL
-            img.src = 'placeholder.jpg'; // 占位图
-            
-            observer.observe(img);
             
             img.onload = () => {
-                imagesLoaded++;
-                updateLoadingStatus(imagesLoaded, CONFIG.totalImages);
-                
-                if (imagesLoaded === CONFIG.totalImages) {
-                    checkLoadingComplete();
-                } else if (imagesLoaded % CONFIG.batchSize === 0) {
-                    // 加载下一批
-                    currentBatch++;
-                    setTimeout(loadImageBatch, 100);
-                }
+                loadedCount++;
+                updateLoadingStatus(loadedCount, CONFIG.totalImages);
+                resolve(img);
             };
             
-            img.onerror = () => handleLoadError(img, i);
+            img.onerror = () => {
+                handleLoadError(img, index)
+                    .then(resolve)
+                    .catch(reject);
+            };
             
+            img.src = `./images/${index}.jpg`;
             slide.appendChild(img);
             container.appendChild(slide);
+        });
+    }
+    
+    // 批量加载图片
+    async function loadBatch(startIndex, size) {
+        const promises = [];
+        const endIndex = Math.min(startIndex + size, CONFIG.totalImages);
+        
+        for (let i = startIndex; i < endIndex; i++) {
+            promises.push(loadImage(i + 1));
+        }
+        
+        try {
+            await Promise.all(promises);
+            if (endIndex < CONFIG.totalImages) {
+                setTimeout(() => loadBatch(endIndex, size), 100);
+            } else {
+                checkLoadingComplete();
+            }
+        } catch (error) {
+            console.error('Error loading batch:', error);
         }
     }
-
-    // 设置加载超时
-    setTimeout(() => {
-        if (imagesLoaded < CONFIG.totalImages) {
-            const remaining = CONFIG.totalImages - imagesLoaded;
-            updateLoadingStatus(imagesLoaded, CONFIG.totalImages,
-                `加载超时，${remaining} 张图片未能加载完成，将显示已加载内容`);
-            
-            setTimeout(() => {
-                checkLoadingComplete();
-            }, 2000);
-        }
-    }, CONFIG.loadingTimeout);
-
+    
     // 开始加载第一批
-    loadImageBatch();
-    showSlides(slideIndex);
+    loadBatch(0, CONFIG.batchSize);
 }
 
 // ... 其他原有代码保持不变 ...
