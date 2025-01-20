@@ -1,109 +1,57 @@
-class Firework {
-    constructor() {
-        this.canvas = document.getElementById('fireworks');
-        this.ctx = this.canvas.getContext('2d');
-        this.particles = [];
-        this.resizeCanvas();
-        window.addEventListener('resize', () => this.resizeCanvas());
-        this.createFireworkInterval = setInterval(() => this.createRandomFirework(), 800);
-        this.animate();
-    }
+/* 在现有样式后添加以下内容 */
 
-    resizeCanvas() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-    }
-
-    createRandomFirework() {
-        const x = Math.random() * this.canvas.width;
-        const y = this.canvas.height + 10;
-        const targetY = Math.random() * (this.canvas.height * 0.5);
-        this.createFirework(x, y, x, targetY);
-    }
-
-    createFirework(x, y, targetX, targetY) {
-        const particles = [];
-        const particleCount = 150;
-        const angle = Math.atan2(targetY - y, targetX - x);
-        const speed = 8;
-        const velocity = {
-            x: Math.cos(angle) * speed,
-            y: Math.sin(angle) * speed
-        };
-
-        particles.push({
-            x, y,
-            targetX, targetY,
-            velocity,
-            type: 'launcher',
-            color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-            life: 1
-        });
-
-        this.particles.push(...particles);
-    }
-
-    explode(x, y) {
-        const particles = [];
-        const particleCount = 150;
-        const angleIncrement = (Math.PI * 2) / particleCount;
-
-        for (let i = 0; i < particleCount; i++) {
-            const angle = angleIncrement * i;
-            const speed = 3 + Math.random() * 3;
-            particles.push({
-                x, y,
-                velocity: {
-                    x: Math.cos(angle) * speed,
-                    y: Math.sin(angle) * speed
-                },
-                type: 'explosion',
-                color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-                life: 1,
-                size: 3
-            });
-        }
-
-        this.particles.push(...particles);
-    }
-
-    animate() {
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        this.particles.forEach((particle, index) => {
-            if (particle.type === 'launcher') {
-                particle.x += particle.velocity.x;
-                particle.y += particle.velocity.y;
-                particle.velocity.y += 0.1;
-
-                if (Math.abs(particle.x - particle.targetX) < 5 && 
-                    Math.abs(particle.y - particle.targetY) < 5) {
-                    this.explode(particle.x, particle.y);
-                    this.particles.splice(index, 1);
-                }
-            } else {
-                particle.x += particle.velocity.x;
-                particle.y += particle.velocity.y;
-                particle.velocity.y += 0.1;
-                particle.life -= 0.02;
-
-                if (particle.life <= 0) {
-                    this.particles.splice(index, 1);
-                    return;
-                }
-
-                this.ctx.fillStyle = particle.color;
-                this.ctx.globalAlpha = particle.life;
-                this.ctx.beginPath();
-                this.ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-                this.ctx.fill();
-                this.ctx.globalAlpha = 1;
-            }
-        });
-
-        requestAnimationFrame(() => this.animate());
-    }
+.slideshow-container {
+    max-width: 800px;
+    position: relative;
+    margin: 20px auto;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
 }
 
-window.onload = () => new Firework();
+.slides {
+    display: none;
+}
+
+.slides img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+/* 前后按钮样式 */
+.prev, .next {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 16px;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    transition: 0.6s ease;
+    border-radius: 0 3px 3px 0;
+    user-select: none;
+    background-color: rgba(0,0,0,0.3);
+}
+
+.next {
+    right: 0;
+    border-radius: 3px 0 0 3px;
+}
+
+.prev:hover, .next:hover {
+    background-color: rgba(0,0,0,0.8);
+}
+
+/* 淡入淡出动画 */
+.fade {
+    animation-name: fade;
+    animation-duration: 1.5s;
+}
+
+@keyframes fade {
+    from {opacity: .4} 
+    to {opacity: 1}
+}
