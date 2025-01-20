@@ -1,131 +1,57 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* 在现有样式后添加以下内容 */
 
-body {
-    min-height: 100vh;
-    background: #1a1a1a;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: 'Arial', sans-serif;
-}
-
-.container {
+.slideshow-container {
+    max-width: 800px;
     position: relative;
-    z-index: 1;
+    margin: 20px auto;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
 }
 
-.birthday-card {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 2rem;
-    border-radius: 20px;
-    text-align: center;
-    max-width: 90%;
-    margin: 20px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+.slides {
+    display: none;
 }
 
-h1 {
-    color: #ff4081;
-    font-size: 2.5em;
-    margin-bottom: 30px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.cake {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    margin: 50px auto;
-}
-
-.plate {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 180px;
-    height: 10px;
-    background: #e0e0e0;
-    border-radius: 5px;
-}
-
-.layer {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 160px;
-    height: 60px;
-    background: #ff9ecd;
+.slides img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
     border-radius: 10px;
 }
 
-.icing {
+/* 前后按钮样式 */
+.prev, .next {
+    cursor: pointer;
     position: absolute;
-    bottom: 70px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 150px;
-    height: 40px;
-    background: #ffd3e8;
-    border-radius: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 16px;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    transition: 0.6s ease;
+    border-radius: 0 3px 3px 0;
+    user-select: none;
+    background-color: rgba(0,0,0,0.3);
 }
 
-.candle {
-    position: absolute;
-    bottom: 110px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 10px;
-    height: 30px;
-    background: #ffd700;
-    border-radius: 5px;
+.next {
+    right: 0;
+    border-radius: 3px 0 0 3px;
 }
 
-.flame {
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 15px;
-    height: 30px;
-    background: linear-gradient(to bottom, #ff5722, #ff9800);
-    border-radius: 50% 50% 20% 20%;
-    animation: flicker 1s infinite alternate;
-    transform-origin: bottom;
+.prev:hover, .next:hover {
+    background-color: rgba(0,0,0,0.8);
 }
 
-@keyframes flicker {
-    0% { transform: translateX(-50%) scale(1) rotate(-2deg); }
-    25% { transform: translateX(-50%) scale(1.1) rotate(2deg); }
-    50% { transform: translateX(-50%) scale(0.9) rotate(-1deg); }
-    75% { transform: translateX(-50%) scale(1.2) rotate(1deg); }
-    100% { transform: translateX(-50%) scale(1) rotate(0deg); }
+/* 淡入淡出动画 */
+.fade {
+    animation-name: fade;
+    animation-duration: 1.5s;
 }
 
-.message {
-    margin-top: 30px;
-    color: #333;
-    padding: 20px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.8);
-}
-
-.message p {
-    margin: 10px 0;
-    font-size: 1.3em;
-    line-height: 1.6;
-    color: #666;
-}
-
-canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-    z-index: 0;
+@keyframes fade {
+    from {opacity: .4} 
+    to {opacity: 1}
 }
