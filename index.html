@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>生日快乐！</title>
     <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 </head>
 <body>
     <!-- 密码验证层 -->
     <div id="password-layer" class="password-layer">
-        <div class="password-box">
+        <div class="password-box animate__animated animate__fadeIn">
             <h2>🎂 生日相册 🎂</h2>
             <input type="password" id="password-input" placeholder="请输入密码查看">
             <button onclick="checkAccess()">进入相册</button>
@@ -17,10 +18,20 @@
         </div>
     </div>
 
-    <!-- 主内容区域（初始隐藏） -->
+    <!-- 主内容区域 -->
     <div id="main-content" class="container" style="display: none;">
-        <div class="birthday-card">
-            <h1>生日快乐！</h1>
+        <!-- 音乐控制器 -->
+        <div class="music-control">
+            <audio id="bgMusic" loop>
+                <source src="./music/birthday.mp3" type="audio/mp3">
+            </audio>
+            <button id="musicToggle" onclick="toggleMusic()">
+                <span class="music-icon">🎵</span>
+            </button>
+        </div>
+
+        <div class="birthday-card animate__animated animate__fadeIn">
+            <h1 class="animate__animated animate__heartBeat animate__infinite">生日快乐！</h1>
             
             <!-- 轮播图容器 -->
             <div class="slideshow-container">
@@ -28,11 +39,14 @@
                 <a class="prev" onclick="changeSlide(-1)">❮</a>
                 <a class="next" onclick="changeSlide(1)">❯</a>
                 <div class="slide-number"></div>
-                <!-- 添加全屏按钮 -->
                 <div class="fullscreen-btn" onclick="toggleFullscreen()">⛶</div>
+                <!-- 加载进度条 -->
+                <div class="loading-progress-container">
+                    <div id="loadingProgress" class="loading-progress"></div>
+                </div>
             </div>
             
-            <div class="cake">
+            <div class="cake animate__animated animate__bounce">
                 <div class="plate"></div>
                 <div class="layer"></div>
                 <div class="icing"></div>
@@ -41,7 +55,7 @@
                 </div>
             </div>
             
-            <div class="message">
+            <div class="message animate__animated animate__fadeIn">
                 <p>愿你的生日充满欢乐和惊喜！</p>
                 <p>愿所有美好都与你相伴！</p>
             </div>
