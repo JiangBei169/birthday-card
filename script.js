@@ -19,13 +19,14 @@ let loadingStartTime = 0;
 
 // 加载状态更新
 function updateLoadingStatus(loaded, total, status = '') {
+    console.log(`Updating status: ${loaded}/${total} - ${status}`); // 调试日志
+    
     const progress = Math.floor((loaded / total) * 100);
     const progressBar = document.getElementById('loadingProgress');
     const loadingText = document.getElementById('loadingText');
     const loadingDetail = document.getElementById('loadingDetail');
     const loadingStatus = document.getElementById('loadingStatus');
     
-    // 确保元素存在
     if (progressBar) {
         progressBar.style.width = `${progress}%`;
     }
@@ -38,11 +39,8 @@ function updateLoadingStatus(loaded, total, status = '') {
         loadingDetail.textContent = `正在加载第 ${loaded} 张，共 ${total} 张`;
     }
     
-    // 添加调试日志
-    console.log(`Loading progress: ${progress}%, Loaded: ${loaded}, Total: ${total}`);
-    
-    if (status && loadingStatus) {
-        loadingStatus.textContent = status;
+    if (loadingStatus) {
+        loadingStatus.textContent = status || `已加载 ${progress}%`;
     }
 }
 
@@ -75,15 +73,14 @@ function handleLoadError(img, index, retries = CONFIG.retryTimes) {
 
 // 检查加载完成状态
 function checkLoadingComplete() {
-    if (imagesLoaded >= CONFIG.totalImages) {
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        if (loadingOverlay) {
-            loadingOverlay.style.opacity = '0';
-            setTimeout(() => {
-                loadingOverlay.style.display = 'none';
-            }, 500);
-        }
-        startAutoSlide();
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.opacity = '0';
+        setTimeout(() => {
+            loadingOverlay.style.display = 'none';
+            showSlides(1); // 显示第一张图片
+            startAutoSlide(); // 开始自动播放
+        }, 500);
     }
 }
 
@@ -91,62 +88,71 @@ function checkLoadingComplete() {
 function initializeSlideshow() {
     const container = document.getElementById('slides-container');
     let loadedCount = 0;
+    const totalImages = CONFIG.totalImages;
     
-    // 重置加载状态
-    imagesLoaded = 0;
-    loadingStartTime = Date.now();
+    // 立即更新初始状态
+    updateLoadingStatus(0, totalImages, '开始加载图片...');
     
-    function loadImage(index) {
-        return new Promise((resolve, reject) => {
+    async function loadImage(index) {
+        try {
             const slide = document.createElement('div');
             slide.className = 'slides fade';
             
             const img = new Image();
+            const url = ImageCrypto.getImageUrl(index);
             
-            img.onload = () => {
-                loadedCount++;
-                updateLoadingStatus(loadedCount, CONFIG.totalImages);
-                resolve(img);
-            };
-            
-            img.onerror = () => {
-                handleLoadError(img, index)
-                    .then(resolve)
-                    .catch(reject);
-            };
-            
-            img.src = `./images/${index}.jpg`;
-            slide.appendChild(img);
-            container.appendChild(slide);
-        });
-    }
-    
-    // 批量加载图片
-    async function loadBatch(startIndex, size) {
-        const promises = [];
-        const endIndex = Math.min(startIndex + size, CONFIG.totalImages);
-        
-        for (let i = startIndex; i < endIndex; i++) {
-            promises.push(loadImage(i + 1));
-        }
-        
-        try {
-            await Promise.all(promises);
-            if (endIndex < CONFIG.totalImages) {
-                setTimeout(() => loadBatch(endIndex, size), 100);
-            } else {
-                checkLoadingComplete();
-            }
+            return new Promise((resolve, reject) => {
+                img.onload = () => {
+                    loadedCount++;
+                    updateLoadingStatus(loadedCount, totalImages, `成功加载第 ${index} 张图片`);
+                    slide.appendChild(img);
+                    container.appendChild(slide);
+                    resolve();
+                };
+                
+                img.onerror = () => {
+                    console.error(`Failed to load image ${index}`);
+                    reject(new Error(`Failed to load image ${index}`));
+                };
+                
+                // 设置图片源
+                console.log(`Loading image ${index} from ${url}`);
+                img.src = url;
+            });
         } catch (error) {
-            console.error('Error loading batch:', error);
+            console.error(`Error loading image ${index}:`, error);
+            throw error;
         }
     }
     
-    // 开始加载第一批
-    loadBatch(0, CONFIG.batchSize);
+    async function loadAllImages() {
+        const batchSize = CONFIG.batchSize;
+        let currentIndex = 1;
+        
+        while (currentIndex <= totalImages) {
+            const batch = [];
+            for (let i = 0; i < batchSize && currentIndex <= totalImages; i++) {
+                batch.push(loadImage(currentIndex));
+                currentIndex++;
+            }
+            
+            try {
+                await Promise.all(batch);
+                console.log(`Batch completed: ${currentIndex - batchSize} to ${currentIndex - 1}`);
+            } catch (error) {
+                console.error('Batch error:', error);
+            }
+        }
+        
+        checkLoadingComplete();
+    }
+    
+    // 开始加载
+    loadAllImages().catch(error => {
+        console.error('Loading failed:', error);
+        updateLoadingStatus(loadedCount, totalImages, '加载过程中遇到错误，请刷新重试');
+    });
 }
-
-// ... 其他原有代码保持不变 ...
 
 // 轮播控制
 function changeSlide(n) {
