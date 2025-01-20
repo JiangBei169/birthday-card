@@ -1,8 +1,9 @@
-// 简化配置
+// 配置
 const CONFIG = {
-    password: '1227',
-    totalImages: 45,
-    slideInterval: 5000
+    password: '1227', // 设置你的密码
+    totalImages: 45,  // 总图片数
+    slideInterval: 3000, // 自动播放间隔（毫秒）
+    autoPlayMusic: true  // 是否自动播放音乐
 };
 
 // 全局变量
@@ -13,13 +14,13 @@ let slideInterval;
 function checkAccess() {
     const input = document.getElementById('password-input').value;
     if (input === CONFIG.password) {
-        // 直接隐藏密码层和加载层
         document.getElementById('password-layer').style.display = 'none';
-        document.getElementById('loadingOverlay').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
-        
-        // 直接开始显示图片
-        showFirstImage();
+        initializeSlideshow();
+        // 开始播放音乐
+        if (CONFIG.autoPlayMusic) {
+            playMusic();
+        }
     } else {
         const error = document.getElementById('password-error');
         if (error) {
@@ -28,48 +29,28 @@ function checkAccess() {
     }
 }
 
-// 显示第一张图片并初始化
-function showFirstImage() {
+// 初始化幻灯片
+function initializeSlideshow() {
     const container = document.getElementById('slides-container');
     
-    // 清空容器
-    container.innerHTML = '';
-    
-    // 只创建第一张图片
-    const slide = document.createElement('div');
-    slide.className = 'slides fade';
-    
-    const img = document.createElement('img');
-    img.src = `images/1.jpg`;
-    img.onload = () => {
-        slide.appendChild(img);
-        container.appendChild(slide);
-        slide.style.display = 'block';
-        
-        // 图片加载成功后，开始加载其他图片
-        loadRemainingImages();
-        startAutoSlide();
-    };
-}
-
-// 加载剩余图片
-function loadRemainingImages() {
-    const container = document.getElementById('slides-container');
-    
-    for (let i = 2; i <= CONFIG.totalImages; i++) {
+    // 创建幻灯片
+    for (let i = 1; i <= CONFIG.totalImages; i++) {
         const slide = document.createElement('div');
-        slide.className = 'slides fade';
+        slide.className = 'slides';
         
         const img = document.createElement('img');
         img.src = `images/${i}.jpg`;
         
         slide.appendChild(img);
         container.appendChild(slide);
-        slide.style.display = 'none';
     }
+    
+    // 显示第一张图片并开始自动播放
+    showSlides(1);
+    startAutoSlide();
 }
 
-// 显示图片
+// 显示指定的幻灯片
 function showSlides(n) {
     const slides = document.getElementsByClassName("slides");
     
@@ -112,25 +93,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // 轮播图事件
+    // 幻灯片容器的鼠标事件
     const slideshowContainer = document.querySelector('.slideshow-container');
     if (slideshowContainer) {
         slideshowContainer.addEventListener('mouseenter', stopAutoSlide);
         slideshowContainer.addEventListener('mouseleave', startAutoSlide);
     }
+    
+    // 添加音乐控制按钮事件
+    const musicToggle = document.getElementById('musicToggle');
+    if (musicToggle) {
+        musicToggle.addEventListener('click', playMusic);
+    }
+    
+    // 处理音乐自动播放策略
+    const music = document.getElementById('bgMusic');
+    music.volume = 0.5; // 设置音量为50%
+    
+    // 监听音乐播放状态
+    music.addEventListener('play', () => {
+        musicToggle.classList.remove('paused');
+    });
+    
+    music.addEventListener('pause', () => {
+        musicToggle.classList.add('paused');
+    });
 });
 
 // 音乐控制
-function toggleMusic() {
+function playMusic() {
     const music = document.getElementById('bgMusic');
-    const btn = document.getElementById('musicToggle');
+    const musicToggle = document.getElementById('musicToggle');
     
     if (music.paused) {
-        music.play();
-        btn.classList.add('playing');
+        music.play().then(() => {
+            musicToggle.classList.remove('paused');
+        }).catch(error => {
+            console.log('自动播放失败:', error);
+        });
     } else {
         music.pause();
-        btn.classList.remove('playing');
+        musicToggle.classList.add('paused');
     }
 }
 
