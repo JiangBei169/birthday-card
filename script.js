@@ -1,122 +1,152 @@
 // 配置
 const CONFIG = {
-    password: '1234',  // 设置访问密码
-    authDuration: 24 * 60 * 60 * 1000,  // 登录有效期：24小时
-    totalImages: 45,  // 图片总数
-    slideInterval: 3000,  // 轮播间隔：3秒
-    preloadImages: true,  // 是否预加载图片
-    effects: {
-        sakura: true,    // 樱花效果
-        fireworks: true, // 烟花效果
-        particles: true  // 粒子效果
-    },
-    messages: {
-        typing1: "愿你的生日充满欢乐和惊喜！",
-        typing2: "愿所有美好都与你相伴！"
-    }
+    password: '1234',
+    authDuration: 24 * 60 * 60 * 1000,
+    totalImages: 45,
+    slideInterval: 3000,
+    preloadImages: true,
+    batchSize: 5,  // 每批加载的图片数量
+    loadingTimeout: 30000,  // 加载超时时间（30秒）
+    retryTimes: 3,  // 加载失败重试次数
+    retryDelay: 1000  // 重试延迟时间（毫秒）
 };
 
 // 全局变量
 let slideIndex = 1;
 let slideInterval;
 let imagesLoaded = 0;
+let loadingStartTime = 0;
 
-// 密码验证功能
-function checkAccess() {
-    const password = document.getElementById('password-input').value;
-    const errorElement = document.getElementById('password-error');
-
-    if (password === CONFIG.password) {
-        // 密码正确
-        document.getElementById('password-layer').style.display = 'none';
-        document.getElementById('main-content').style.display = 'block';
-        
-        // 初始化内容
-        initializeContent();
-        
-        // 开始播放音乐
-        const music = document.getElementById('bgMusic');
-        music.play().catch(err => console.log('Auto-play prevented'));
-        
-        // 保存登录状态
-        localStorage.setItem('birthday_auth', Date.now().toString());
-        localStorage.setItem('birthday_auth_hash', btoa(CONFIG.password));
+// 加载状态更新
+function updateLoadingStatus(loaded, total, status = '') {
+    const progress = (loaded / total) * 100;
+    const progressBar = document.getElementById('loadingProgress');
+    const loadingText = document.getElementById('loadingText');
+    const loadingDetail = document.getElementById('loadingDetail');
+    const loadingStatus = document.getElementById('loadingStatus');
+    
+    // 更新进度条
+    progressBar.style.width = `${progress}%`;
+    
+    // 更新加载文本
+    loadingText.textContent = `正在加载美好回忆... ${Math.round(progress)}%`;
+    
+    // 更新详细信息
+    loadingDetail.textContent = `正在加载第 ${loaded} 张，共 ${total} 张`;
+    
+    // 更新状态信息
+    if (status) {
+        loadingStatus.textContent = status;
+    }
+    
+    // 计算加载速度和剩余时间
+    if (loadingStartTime === 0) {
+        loadingStartTime = Date.now();
     } else {
-        // 密码错误
-        errorElement.textContent = '密码错误，请重试';
-        errorElement.style.display = 'block';
-        document.getElementById('password-input').value = '';
+        const elapsed = (Date.now() - loadingStartTime) / 1000;
+        const speed = loaded / elapsed;
+        const remaining = (total - loaded) / speed;
+        if (remaining > 0) {
+            loadingStatus.textContent = 
+                `预计还需 ${Math.round(remaining)} 秒完成加载`;
+        }
+    }
+}
+
+// 图片加载错误处理
+function handleLoadError(img, index, retries = CONFIG.retryTimes) {
+    if (retries > 0) {
+        const status = `图片 ${index} 加载失败，${retries} 次重试机会`;
+        updateLoadingStatus(imagesLoaded, CONFIG.totalImages, status);
         
         setTimeout(() => {
-            errorElement.style.display = 'none';
-        }, 3000);
+            img.src = img.src; // 重试加载
+        }, CONFIG.retryDelay);
+        
+        img.onerror = () => handleLoadError(img, index, retries - 1);
+    } else {
+        console.log(`Failed to load image ${index} after all retries`);
+        imagesLoaded++;
+        updateLoadingStatus(imagesLoaded, CONFIG.totalImages, 
+            `图片 ${index} 加载失败，已跳过`);
+        
+        // 使用占位图
+        img.src = 'placeholder.jpg';
+        checkLoadingComplete();
     }
 }
 
-// script.js 继续
-
-// 初始化所有内容
-function initializeContent() {
-    // 显示加载overlay
-    document.getElementById('loadingOverlay').style.display = 'flex';
-    
-    // 初始化特效
-    if (CONFIG.effects.particles) {
-        initParticles();
+// 检查加载完成状态
+function checkLoadingComplete() {
+    if (imagesLoaded === CONFIG.totalImages) {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        loadingOverlay.style.opacity = '0';
+        setTimeout(() => {
+            loadingOverlay.style.display = 'none';
+        }, 500);
+        startAutoSlide();
     }
-    if (CONFIG.effects.sakura) {
-        initSakura();
-    }
-    if (CONFIG.effects.fireworks) {
-        new Firework();
-    }
-    
-    // 初始化轮播图
-    initializeSlideshow();
-    
-    // 添加打字机效果
-    const messageElement1 = document.querySelector('.typing-text');
-    const messageElement2 = document.querySelector('.typing-text-2');
-    typeMessage(messageElement1, CONFIG.messages.typing1);
-    setTimeout(() => {
-        typeMessage(messageElement2, CONFIG.messages.typing2);
-    }, 4000);
 }
 
-// 图片预加载和轮播初始化
+// 批量加载图片
 function initializeSlideshow() {
     const container = document.getElementById('slides-container');
-    const progressBar = document.getElementById('loadingProgress');
-    
-    for (let i = 1; i <= CONFIG.totalImages; i++) {
-        const slide = document.createElement('div');
-        slide.className = 'slides fade';
+    let currentBatch = 0;
+    loadingStartTime = Date.now();
+
+    function loadImageBatch() {
+        const start = currentBatch * CONFIG.batchSize + 1;
+        const end = Math.min(start + CONFIG.batchSize - 1, CONFIG.totalImages);
         
-        const img = new Image();
-        img.onload = () => {
-            imagesLoaded++;
-            progressBar.style.width = `${(imagesLoaded/CONFIG.totalImages)*100}%`;
+        updateLoadingStatus(imagesLoaded, CONFIG.totalImages, 
+            `正在加载第 ${start} - ${end} 批图片`);
+        
+        for (let i = start; i <= end; i++) {
+            const slide = document.createElement('div');
+            slide.className = 'slides fade';
             
-            if (imagesLoaded === CONFIG.totalImages) {
-                document.getElementById('loadingOverlay').style.display = 'none';
-                startAutoSlide();
-            }
-        };
-        
-        // 使用加密的图片URL
-        if (CONFIG.imageEncryption && CONFIG.imageEncryption.enabled) {
-            img.src = ImageCrypto.getImageUrl(i);
-        } else {
+            const img = new Image();
+            
+            img.onload = () => {
+                imagesLoaded++;
+                updateLoadingStatus(imagesLoaded, CONFIG.totalImages);
+                
+                if (imagesLoaded === CONFIG.totalImages) {
+                    checkLoadingComplete();
+                } else if (imagesLoaded % CONFIG.batchSize === 0) {
+                    // 加载下一批
+                    currentBatch++;
+                    setTimeout(loadImageBatch, 100);
+                }
+            };
+            
+            img.onerror = () => handleLoadError(img, i);
+            
             img.src = `./images/${i}.jpg`;
+            slide.appendChild(img);
+            container.appendChild(slide);
         }
-        
-        img.alt = `生日照片${i}`;
-        slide.appendChild(img);
-        container.appendChild(slide);
     }
-    
+
+    // 设置加载超时
+    setTimeout(() => {
+        if (imagesLoaded < CONFIG.totalImages) {
+            const remaining = CONFIG.totalImages - imagesLoaded;
+            updateLoadingStatus(imagesLoaded, CONFIG.totalImages,
+                `加载超时，${remaining} 张图片未能加载完成，将显示已加载内容`);
+            
+            setTimeout(() => {
+                checkLoadingComplete();
+            }, 2000);
+        }
+    }, CONFIG.loadingTimeout);
+
+    // 开始加载第一批
+    loadImageBatch();
     showSlides(slideIndex);
 }
+
+// ... 其他原有代码保持不变 ...
 
 // 轮播控制
 function changeSlide(n) {
