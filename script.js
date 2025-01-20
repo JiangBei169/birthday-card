@@ -19,8 +19,6 @@ let loadingStartTime = 0;
 
 // 加载状态更新
 function updateLoadingStatus(loaded, total, status = '') {
-    console.log(`Updating status: ${loaded}/${total} - ${status}`); // 调试日志
-    
     const progress = Math.floor((loaded / total) * 100);
     const progressBar = document.getElementById('loadingProgress');
     const loadingText = document.getElementById('loadingText');
@@ -42,6 +40,8 @@ function updateLoadingStatus(loaded, total, status = '') {
     if (loadingStatus) {
         loadingStatus.textContent = status || `已加载 ${progress}%`;
     }
+    
+    console.log(`Loading progress: ${progress}%, ${loaded}/${total} images loaded`);
 }
 
 // 图片加载错误处理
@@ -73,14 +73,18 @@ function handleLoadError(img, index, retries = CONFIG.retryTimes) {
 
 // 检查加载完成状态
 function checkLoadingComplete() {
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    if (loadingOverlay) {
-        loadingOverlay.style.opacity = '0';
-        setTimeout(() => {
-            loadingOverlay.style.display = 'none';
-            showSlides(1); // 显示第一张图片
-            startAutoSlide(); // 开始自动播放
-        }, 500);
+    console.log('Checking loading completion...');
+    if (imagesLoaded >= CONFIG.totalImages) {
+        console.log('All images loaded, hiding loading overlay');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.opacity = '0';
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+                showSlides(1);
+                startAutoSlide();
+            }, 500);
+        }
     }
 }
 
@@ -99,14 +103,14 @@ function initializeSlideshow() {
             slide.className = 'slides fade';
             
             const img = new Image();
-            const url = `./images/${index}.jpg`; // 直接使用图片路径
+            const url = `./images/${index}.jpg`;
             
-            console.log(`🔄 Attempting to load image ${index} from: ${url}`);
+            console.log(`🔄 Loading image ${index} from: ${url}`);
             
             return new Promise((resolve, reject) => {
                 img.onload = () => {
                     loadedCount++;
-                    console.log(`✅ Successfully loaded image ${index}`);
+                    console.log(`✅ Image ${index} loaded successfully`);
                     updateLoadingStatus(loadedCount, totalImages, `成功加载第 ${index} 张图片`);
                     slide.appendChild(img);
                     container.appendChild(slide);
@@ -114,49 +118,58 @@ function initializeSlideshow() {
                 };
                 
                 img.onerror = (e) => {
-                    console.error(`❌ Failed to load image ${index}:`, e);
-                    console.log(`Attempted URL: ${url}`);
+                    console.error(`❌ Image ${index} failed to load:`, e);
                     reject(new Error(`Failed to load image ${index}`));
                 };
                 
                 img.src = url;
             });
         } catch (error) {
-            console.error(`❌ Error in loadImage(${index}):`, error);
+            console.error(`Error loading image ${index}:`, error);
             throw error;
         }
     }
     
-    async function loadAllImages() {
-        console.log('Starting to load all images...');
-        const batchSize = CONFIG.batchSize;
-        let currentIndex = 1;
+    async function loadBatch(startIndex, endIndex) {
+        console.log(`Loading batch from ${startIndex} to ${endIndex}`);
+        const promises = [];
         
-        while (currentIndex <= totalImages) {
-            console.log(`Loading batch starting from index ${currentIndex}`);
-            const batch = [];
-            for (let i = 0; i < batchSize && currentIndex <= totalImages; i++) {
-                batch.push(loadImage(currentIndex));
-                currentIndex++;
-            }
-            
-            try {
-                await Promise.all(batch);
-                console.log(`✅ Batch completed: ${currentIndex - batchSize} to ${currentIndex - 1}`);
-            } catch (error) {
-                console.error('❌ Batch error:', error);
-            }
+        for (let i = startIndex; i <= endIndex; i++) {
+            promises.push(loadImage(i));
         }
         
-        console.log('All images processed. Checking completion...');
-        checkLoadingComplete();
+        try {
+            await Promise.all(promises);
+            console.log(`✅ Batch ${startIndex}-${endIndex} completed`);
+            
+            // 如果还有更多图片要加载，继续下一批
+            if (endIndex < totalImages) {
+                const nextStart = endIndex + 1;
+                const nextEnd = Math.min(nextStart + CONFIG.batchSize - 1, totalImages);
+                // 使用 setTimeout 来避免阻塞
+                setTimeout(() => {
+                    loadBatch(nextStart, nextEnd);
+                }, 100);
+            } else {
+                console.log('✅ All images loaded successfully');
+                checkLoadingComplete();
+            }
+        } catch (error) {
+            console.error(`❌ Error in batch ${startIndex}-${endIndex}:`, error);
+            // 尝试继续加载下一批
+            if (endIndex < totalImages) {
+                const nextStart = endIndex + 1;
+                const nextEnd = Math.min(nextStart + CONFIG.batchSize - 1, totalImages);
+                setTimeout(() => {
+                    loadBatch(nextStart, nextEnd);
+                }, 100);
+            }
+        }
     }
     
-    // 开始加载
-    loadAllImages().catch(error => {
-        console.error('❌ Loading failed:', error);
-        updateLoadingStatus(loadedCount, totalImages, '加载过程中遇到错误，请刷新重试');
-    });
+    // 开始加载第一批
+    const firstBatchEnd = Math.min(CONFIG.batchSize, totalImages);
+    loadBatch(1, firstBatchEnd);
 }
 
 // 轮播控制
