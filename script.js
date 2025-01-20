@@ -1,7 +1,7 @@
 // 配置
 const CONFIG = {
-    password: '1234',
-    authDuration: 24 * 60 * 60 * 1000,
+    password: CryptoJS.SHA256('1227').toString(),
+    authDuration: 1 * 60 * 60 * 1000,
     totalImages: 45,
     slideInterval: 3000,
     preloadImages: true,
@@ -55,25 +55,29 @@ function updateLoadingStatus(loaded, total, status = '') {
 
 // 图片加载错误处理
 function handleLoadError(img, index, retries = CONFIG.retryTimes) {
-    if (retries > 0) {
-        const status = `图片 ${index} 加载失败，${retries} 次重试机会`;
-        updateLoadingStatus(imagesLoaded, CONFIG.totalImages, status);
-        
-        setTimeout(() => {
-            img.src = img.src; // 重试加载
-        }, CONFIG.retryDelay);
-        
-        img.onerror = () => handleLoadError(img, index, retries - 1);
-    } else {
-        console.log(`Failed to load image ${index} after all retries`);
-        imagesLoaded++;
-        updateLoadingStatus(imagesLoaded, CONFIG.totalImages, 
-            `图片 ${index} 加载失败，已跳过`);
-        
-        // 使用占位图
-        img.src = 'placeholder.jpg';
-        checkLoadingComplete();
-    }
+    return new Promise((resolve, reject) => {
+        if (retries > 0) {
+            const status = `图片 ${index} 加载失败，${retries} 次重试机会`;
+            updateLoadingStatus(imagesLoaded, CONFIG.totalImages, status);
+            
+            setTimeout(async () => {
+                try {
+                    img.src = ImageCrypto.getImageUrl(index); // 重新获取加密URL
+                    await new Promise((res, rej) => {
+                        img.onload = res;
+                        img.onerror = () => handleLoadError(img, index, retries - 1).then(res).catch(rej);
+                    });
+                    resolve();
+                } catch (err) {
+                    reject(err);
+                }
+            }, CONFIG.retryDelay);
+        } else {
+            console.error(`Failed to load image ${index} after all retries`);
+            img.src = 'placeholder.jpg';
+            reject(new Error(`Image ${index} failed to load`));
+        }
+    });
 }
 
 // 检查加载完成状态
@@ -92,7 +96,20 @@ function checkLoadingComplete() {
 function initializeSlideshow() {
     const container = document.getElementById('slides-container');
     let currentBatch = 0;
-    loadingStartTime = Date.now();
+    
+    // 使用 IntersectionObserver 实现懒加载
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                if (img.dataset.src) {
+                    img.src = img.dataset.src;
+                    img.removeAttribute('data-src');
+                    observer.unobserve(img);
+                }
+            }
+        });
+    });
 
     function loadImageBatch() {
         const start = currentBatch * CONFIG.batchSize + 1;
@@ -106,6 +123,10 @@ function initializeSlideshow() {
             slide.className = 'slides fade';
             
             const img = new Image();
+            img.dataset.src = ImageCrypto.getImageUrl(i); // 使用加密的URL
+            img.src = 'placeholder.jpg'; // 占位图
+            
+            observer.observe(img);
             
             img.onload = () => {
                 imagesLoaded++;
@@ -122,7 +143,6 @@ function initializeSlideshow() {
             
             img.onerror = () => handleLoadError(img, i);
             
-            img.src = `./images/${i}.jpg`;
             slide.appendChild(img);
             container.appendChild(slide);
         }
@@ -279,20 +299,213 @@ function typeMessage(element, text, speed = 100) {
     type();
 }
 
-// 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
-    // 密码输入框回车事件
-    document.getElementById('password-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            checkAccess();
+// 图片预加载管理器
+class ImagePreloader {
+    constructor(totalImages) {
+        this.totalImages = totalImages;
+        this.loadedImages = 0;
+        this.imageCache = new Map();
+    }
+
+    preloadImage(index) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = ImageCrypto.getImageUrl(index);
+            
+            img.onload = () => {
+                this.loadedImages++;
+                this.imageCache.set(index, img);
+                updateLoadingStatus(this.loadedImages, this.totalImages);
+                resolve(img);
+            };
+            
+            img.onerror = () => handleLoadError(img, index)
+                .then(resolve)
+                .catch(reject);
+            
+            img.src = url;
+        });
+    }
+
+    async preloadBatch(startIndex, batchSize) {
+        const promises = [];
+        for (let i = startIndex; i < startIndex + batchSize; i++) {
+            if (i <= this.totalImages) {
+                promises.push(this.preloadImage(i));
+            }
         }
+        return Promise.all(promises);
+    }
+
+    getImage(index) {
+        return this.imageCache.get(index);
+    }
+}
+
+// 音乐播放管理器
+class MusicPlayer {
+    constructor() {
+        this.audio = document.getElementById('bgMusic');
+        this.playlist = [
+            './music/birthday.mp3',
+            './music/happy.mp3',
+            './music/celebration.mp3'
+        ];
+        this.currentTrack = 0;
+        this.isPlaying = false;
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        this.audio.addEventListener('ended', () => this.playNext());
+        document.addEventListener('click', () => this.tryAutoPlay(), { once: true });
+    }
+
+    async tryAutoPlay() {
+        try {
+            await this.audio.play();
+            this.isPlaying = true;
+            document.getElementById('musicToggle').classList.add('playing');
+        } catch (err) {
+            console.log('Auto-play prevented');
+        }
+    }
+
+    toggle() {
+        if (this.isPlaying) {
+            this.audio.pause();
+        } else {
+            this.audio.play();
+        }
+        this.isPlaying = !this.isPlaying;
+        document.getElementById('musicToggle').classList.toggle('playing');
+    }
+
+    playNext() {
+        this.currentTrack = (this.currentTrack + 1) % this.playlist.length;
+        this.audio.src = this.playlist[this.currentTrack];
+        if (this.isPlaying) {
+            this.audio.play();
+        }
+    }
+}
+
+// 动画效果管理器
+class AnimationManager {
+    constructor() {
+        this.animations = new Map();
+        this.setupAnimations();
+    }
+
+    setupAnimations() {
+        // 蛋糕动画
+        this.animations.set('cake', {
+            element: document.querySelector('.cake'),
+            play: () => {
+                const cake = document.querySelector('.cake');
+                cake.classList.add('animate__animated', 'animate__bounce');
+                setTimeout(() => {
+                    cake.classList.add('blowing-candle');
+                }, 2000);
+            }
+        });
+
+        // 礼物动画
+        this.createGiftAnimation();
+        
+        // 气球动画
+        this.createBalloonAnimation();
+        
+        // 彩带动画
+        this.createConfettiAnimation();
+    }
+
+    createGiftAnimation() {
+        const gift = document.createElement('div');
+        gift.className = 'gift animate__animated';
+        gift.innerHTML = '🎁';
+        gift.onclick = () => {
+            gift.classList.add('animate__rubberBand');
+            this.showSurprise();
+        };
+        document.querySelector('.container').appendChild(gift);
+    }
+
+    createBalloonAnimation() {
+        const colors = ['#ff1177', '#ff4488', '#ff99cc', '#ffccee'];
+        for (let i = 0; i < 5; i++) {
+            const balloon = document.createElement('div');
+            balloon.className = 'balloon';
+            balloon.style.backgroundColor = colors[i % colors.length];
+            balloon.style.left = `${Math.random() * 100}%`;
+            balloon.style.animationDelay = `${Math.random() * 2}s`;
+            document.querySelector('.container').appendChild(balloon);
+        }
+    }
+
+    createConfettiAnimation() {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti-container';
+        document.body.appendChild(confetti);
+        
+        for (let i = 0; i < 50; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            piece.style.left = `${Math.random() * 100}%`;
+            piece.style.animationDelay = `${Math.random() * 3}s`;
+            confetti.appendChild(piece);
+        }
+    }
+
+    showSurprise() {
+        // 显示惊喜消息或特效
+        const surprise = document.createElement('div');
+        surprise.className = 'surprise animate__animated animate__fadeIn';
+        surprise.textContent = '🎉 生日快乐！';
+        document.body.appendChild(surprise);
+        
+        setTimeout(() => {
+            surprise.classList.add('animate__fadeOut');
+            setTimeout(() => surprise.remove(), 1000);
+        }, 3000);
+    }
+
+    playAll() {
+        this.animations.forEach(animation => animation.play());
+    }
+}
+
+// 初始化所有功能
+function initializeAll() {
+    const preloader = new ImagePreloader(CONFIG.totalImages);
+    const musicPlayer = new MusicPlayer();
+    const animationManager = new AnimationManager();
+    
+    // 开始预加载图片
+    preloader.preloadBatch(1, CONFIG.batchSize).then(() => {
+        // 图片加载完成后播放动画
+        animationManager.playAll();
     });
     
-    // 轮播图事件
-    const slideshowContainer = document.querySelector('.slideshow-container');
-    slideshowContainer.addEventListener('mouseenter', stopAutoSlide);
-    slideshowContainer.addEventListener('mouseleave', startAutoSlide);
+    // 绑定音乐控制
+    document.getElementById('musicToggle').onclick = () => musicPlayer.toggle();
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', initializeAll);
+
+function checkAccess() {
+    const input = document.getElementById('password-input').value;
+    const hashedInput = CryptoJS.SHA256(input).toString();
     
-    // 检查登录状态
-    checkPreviousLogin();
-});
+    if (hashedInput === CONFIG.password) {
+        localStorage.setItem('auth_time', Date.now());
+        document.getElementById('password-layer').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        initializeSlideshow();
+    } else {
+        const error = document.getElementById('password-error');
+        error.textContent = '密码错误，请重试';
+        error.classList.add('animate__animated', 'animate__shakeX');
+    }
+}
