@@ -1,130 +1,63 @@
-// 配置
+// 简化配置
 const CONFIG = {
     password: '1234',
-    authDuration: 24 * 60 * 60 * 1000,
     totalImages: 45,
-    slideInterval: 3000,
-    preloadImages: true,
-    batchSize: 5,
-    loadingTimeout: 30000,
-    retryTimes: 3,
-    retryDelay: 1000
+    slideInterval: 3000
 };
 
 // 全局变量
 let slideIndex = 1;
 let slideInterval;
-let imagesLoaded = 0;
 
+// 简化的初始化函数
 function initializeSlideshow() {
     const container = document.getElementById('slides-container');
-    let currentImage = 1;
     
-    console.log('Starting slideshow initialization...');
-    
-    function loadNextImage() {
-        if (currentImage > CONFIG.totalImages) {
-            console.log('All images loaded');
-            checkLoadingComplete();
-            return;
-        }
-        
+    // 直接创建所有幻灯片容器
+    for (let i = 1; i <= CONFIG.totalImages; i++) {
         const slide = document.createElement('div');
         slide.className = 'slides fade';
         
-        const img = new Image();
-        const url = `images/${currentImage}.jpg`;
+        const img = document.createElement('img');
+        img.src = `images/${i}.jpg`;
         
-        console.log(`Attempting to load image: ${url}`);
-        
-        img.onload = () => {
-            console.log(`Successfully loaded image ${currentImage}`);
-            imagesLoaded++;
-            updateLoadingStatus(imagesLoaded, CONFIG.totalImages);
-            slide.appendChild(img);
-            container.appendChild(slide);
-            
-            // 加载下一张图片
-            currentImage++;
-            setTimeout(loadNextImage, 200); // 增加延迟到 200ms
-        };
-        
-        img.onerror = (error) => {
-            console.error(`Failed to load image ${currentImage}:`, error);
-            console.error(`Attempted URL: ${url}`);
-            // 即使失败也继续加载下一张
-            currentImage++;
-            setTimeout(loadNextImage, 200);
-        };
-        
-        img.src = url;
+        slide.appendChild(img);
+        container.appendChild(slide);
     }
     
-    // 开始加载第一张图片
-    loadNextImage();
+    // 隐藏加载界面
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+    
+    // 显示第一张图片并开始自动播放
+    showSlides(1);
+    startAutoSlide();
 }
 
-function updateLoadingStatus(loaded, total) {
-    const progress = Math.floor((loaded / total) * 100);
-    
-    // 更新进度条
-    const progressBar = document.getElementById('loadingProgress');
-    if (progressBar) {
-        progressBar.style.width = `${progress}%`;
-    }
-    
-    // 更新加载文本
-    const loadingText = document.getElementById('loadingText');
-    if (loadingText) {
-        loadingText.textContent = `正在加载美好回忆... ${progress}%`;
-    }
-    
-    // 更新详细信息
-    const loadingDetail = document.getElementById('loadingDetail');
-    if (loadingDetail) {
-        loadingDetail.textContent = `正在加载第 ${loaded} 张，共 ${total} 张`;
-    }
-    
-    // 更新已加载百分比
-    const loadingStatus = document.getElementById('loadingStatus');
-    if (loadingStatus) {
-        loadingStatus.textContent = `已加载 ${progress}%`;
-    }
-    
-    console.log(`Progress: ${loaded}/${total} (${progress}%)`);
-}
-
-function checkLoadingComplete() {
-    if (imagesLoaded >= CONFIG.totalImages) {
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        if (loadingOverlay) {
-            loadingOverlay.style.opacity = '0';
-            setTimeout(() => {
-                loadingOverlay.style.display = 'none';
-                showSlides(1);
-                startAutoSlide();
-            }, 500);
-        }
-    }
-}
-
+// 显示图片
 function showSlides(n) {
     const slides = document.getElementsByClassName("slides");
     
     if (n > slides.length) slideIndex = 1;
     if (n < 1) slideIndex = slides.length;
     
+    // 隐藏所有图片
     for (let slide of slides) {
         slide.style.display = "none";
     }
     
+    // 显示当前图片
     slides[slideIndex-1].style.display = "block";
 }
 
+// 切换图片
 function changeSlide(n) {
     showSlides(slideIndex += n);
 }
 
+// 自动播放
 function startAutoSlide() {
     stopAutoSlide();
     slideInterval = setInterval(() => {
@@ -132,9 +65,25 @@ function startAutoSlide() {
     }, CONFIG.slideInterval);
 }
 
+// 停止自动播放
 function stopAutoSlide() {
     if (slideInterval) {
         clearInterval(slideInterval);
+    }
+}
+
+// 检查访问权限
+function checkAccess() {
+    const input = document.getElementById('password-input').value;
+    if (input === CONFIG.password) {
+        document.getElementById('password-layer').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        initializeSlideshow();
+    } else {
+        const error = document.getElementById('password-error');
+        if (error) {
+            error.textContent = '密码错误，请重试';
+        }
     }
 }
 
@@ -154,23 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
         slideshowContainer.addEventListener('mouseleave', startAutoSlide);
     }
 });
-
-// 检查访问权限
-function checkAccess() {
-    const input = document.getElementById('password-input').value;
-    if (input === CONFIG.password) {
-        localStorage.setItem('auth_time', Date.now());
-        document.getElementById('password-layer').style.display = 'none';
-        document.getElementById('main-content').style.display = 'block';
-        initializeSlideshow();
-    } else {
-        const error = document.getElementById('password-error');
-        if (error) {
-            error.textContent = '密码错误，请重试';
-            error.classList.add('animate__animated', 'animate__shakeX');
-        }
-    }
-}
 
 // 音乐控制
 function toggleMusic() {
