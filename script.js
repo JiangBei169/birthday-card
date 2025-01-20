@@ -25,15 +25,30 @@ function initializeSlideshow() {
         container.appendChild(slide);
     }
     
-    // 隐藏加载界面
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    if (loadingOverlay) {
-        loadingOverlay.style.display = 'none';
-    }
-    
     // 显示第一张图片并开始自动播放
     showSlides(1);
     startAutoSlide();
+}
+
+// 检查访问权限
+function checkAccess() {
+    const input = document.getElementById('password-input').value;
+    if (input === CONFIG.password) {
+        // 直接隐藏密码层并显示内容
+        document.getElementById('password-layer').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        // 移除加载层
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.remove();
+        }
+        initializeSlideshow();
+    } else {
+        const error = document.getElementById('password-error');
+        if (error) {
+            error.textContent = '密码错误，请重试';
+        }
+    }
 }
 
 // 显示图片
@@ -72,23 +87,14 @@ function stopAutoSlide() {
     }
 }
 
-// 检查访问权限
-function checkAccess() {
-    const input = document.getElementById('password-input').value;
-    if (input === CONFIG.password) {
-        document.getElementById('password-layer').style.display = 'none';
-        document.getElementById('main-content').style.display = 'block';
-        initializeSlideshow();
-    } else {
-        const error = document.getElementById('password-error');
-        if (error) {
-            error.textContent = '密码错误，请重试';
-        }
-    }
-}
-
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
+    // 移除加载层
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.remove();
+    }
+    
     // 密码输入框回车事件
     document.getElementById('password-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
