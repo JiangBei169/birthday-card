@@ -6,62 +6,99 @@
     <title>生日快乐！</title>
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <!-- 特效库 -->
+    <script src="https://cdn.jsdelivr.net/gh/dreamncn/Sakura/sakura.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <!-- 加密库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 <body>
+    <!-- 粒子效果背景 -->
+    <div id="particles-js"></div>
+    
     <!-- 密码验证层 -->
     <div id="password-layer" class="password-layer">
         <div class="password-box animate__animated animate__fadeIn">
-            <h2>🎂 生日相册 🎂</h2>
+            <div class="heart-icon">❤️</div>
+            <h2 class="animate__animated animate__heartBeat animate__infinite">生日相册</h2>
             <input type="password" id="password-input" placeholder="请输入密码查看">
-            <button onclick="checkAccess()">进入相册</button>
+            <button onclick="checkAccess()" class="glow-button">进入相册</button>
             <p id="password-error" class="password-error"></p>
         </div>
     </div>
 
     <!-- 主内容区域 -->
     <div id="main-content" class="container" style="display: none;">
+        <!-- 加载指示器 -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">正在加载美好回忆...</div>
+            <div class="loading-progress">
+                <div id="loadingProgress" class="progress-bar"></div>
+            </div>
+        </div>
+
         <!-- 音乐控制器 -->
         <div class="music-control">
             <audio id="bgMusic" loop>
                 <source src="./music/birthday.mp3" type="audio/mp3">
             </audio>
-            <button id="musicToggle" onclick="toggleMusic()">
+            <button id="musicToggle" class="floating-btn" onclick="toggleMusic()">
                 <span class="music-icon">🎵</span>
             </button>
         </div>
 
         <div class="birthday-card animate__animated animate__fadeIn">
-            <h1 class="animate__animated animate__heartBeat animate__infinite">生日快乐！</h1>
+            <h1 class="neon-text animate__animated animate__heartBeat animate__infinite">
+                生日快乐！
+            </h1>
             
             <!-- 轮播图容器 -->
             <div class="slideshow-container">
                 <div id="slides-container"></div>
-                <a class="prev" onclick="changeSlide(-1)">❮</a>
-                <a class="next" onclick="changeSlide(1)">❯</a>
-                <div class="slide-number"></div>
-                <div class="fullscreen-btn" onclick="toggleFullscreen()">⛶</div>
-                <!-- 加载进度条 -->
+                <div class="slide-controls">
+                    <button class="control-btn prev" onclick="changeSlide(-1)">❮</button>
+                    <div class="slide-number"></div>
+                    <button class="control-btn next" onclick="changeSlide(1)">❯</button>
+                </div>
+                <button class="fullscreen-btn" onclick="toggleFullscreen()">
+                    <span class="icon">⛶</span>
+                </button>
+                <!-- 图片加载进度条 -->
                 <div class="loading-progress-container">
-                    <div id="loadingProgress" class="loading-progress"></div>
+                    <div id="imageLoadingProgress" class="loading-progress"></div>
                 </div>
             </div>
             
+            <!-- 生日蛋糕动画 -->
             <div class="cake animate__animated animate__bounce">
                 <div class="plate"></div>
-                <div class="layer"></div>
+                <div class="layer layer-bottom"></div>
+                <div class="layer layer-middle"></div>
+                <div class="layer layer-top"></div>
                 <div class="icing"></div>
+                <div class="drip drip1"></div>
+                <div class="drip drip2"></div>
+                <div class="drip drip3"></div>
                 <div class="candle">
                     <div class="flame"></div>
                 </div>
             </div>
             
+            <!-- 祝福消息 -->
             <div class="message animate__animated animate__fadeIn">
-                <p>愿你的生日充满欢乐和惊喜！</p>
-                <p>愿所有美好都与你相伴！</p>
+                <p class="typing-text"></p>
+                <p class="typing-text-2"></p>
             </div>
         </div>
     </div>
+    
+    <!-- 特效容器 -->
+    <div class="sakura-container"></div>
     <canvas id="fireworks"></canvas>
+
+    <!-- JavaScript 文件 -->
+    <script src="./imageEncrypt.js"></script>
     <script src="./script.js"></script>
 </body>
 </html>
