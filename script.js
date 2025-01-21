@@ -18,31 +18,42 @@ class Firework {
         this.x = x;
         this.y = y;
         this.particles = [];
+        this.hue = Math.random() * 360;
         this.createParticles();
     }
 
     createParticles() {
-        const colors = [
-            '#ff69b4', '#ff1493', '#ffb6c1', '#ffc0cb', 
-            '#ff0000', '#ffd700', '#ff4500', '#00ff00'
-        ];
-        for (let i = 0; i < 100; i++) {
-            const angle = (Math.PI * 2 * i) / 100;
-            const velocity = 5 + Math.random() * 5;
+        const particleCount = 150; // 增加粒子数量
+        const angleStep = (Math.PI * 2) / particleCount;
+        const velocityBase = 8; // 增加基础速度
+
+        for (let i = 0; i < particleCount; i++) {
+            const angle = angleStep * i;
+            // 随机化速度和大小
+            const velocity = velocityBase + (Math.random() - 0.5) * 3;
+            const size = 2 + Math.random() * 2;
+            
             const particle = document.createElement('div');
             particle.className = 'firework-particle';
-            particle.style.left = this.x + 'px';
-            particle.style.top = this.y + 'px';
-            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            // 使用 HSL 颜色以创建更绚丽的效果
+            const hue = this.hue + Math.random() * 30 - 15;
+            particle.style.backgroundColor = `hsl(${hue}, 100%, 60%)`;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
             
             this.particles.push({
                 element: particle,
-                velocity: velocity,
-                angle: angle,
                 x: this.x,
                 y: this.y,
+                velocity: velocity,
+                angle: angle,
+                // 添加随机扩散效果
+                spread: Math.random() * 0.2 - 0.1,
                 alpha: 1,
-                gravity: 0.02
+                decay: 0.01 + Math.random() * 0.01,
+                gravity: 0.1,
+                hue: hue
             });
             
             document.getElementById('fireworks-container').appendChild(particle);
@@ -51,26 +62,32 @@ class Firework {
 
     animate() {
         this.particles.forEach(particle => {
-            particle.velocity *= 0.99;
+            // 应用扩散效果
+            particle.angle += particle.spread;
+            particle.velocity *= 0.98;
+            
+            // 计算新位置
             particle.x += Math.cos(particle.angle) * particle.velocity;
             particle.y += Math.sin(particle.angle) * particle.velocity + particle.gravity;
-            particle.alpha -= 0.003;
             
-            particle.element.style.left = particle.x + 'px';
-            particle.element.style.top = particle.y + 'px';
+            // 更新颜色和透明度
+            particle.alpha -= particle.decay;
             particle.element.style.opacity = particle.alpha;
+            
+            // 添加轨迹发光效果
+            particle.element.style.boxShadow = `0 0 ${6 + Math.random() * 4}px hsl(${particle.hue}, 100%, 70%)`;
+            
+            // 更新位置
+            particle.element.style.transform = `translate(${particle.x}px, ${particle.y}px)`;
         });
         
+        // 移除消失的粒子
         this.particles = this.particles.filter(particle => particle.alpha > 0);
         
         if (this.particles.length > 0) {
             requestAnimationFrame(() => this.animate());
         } else {
-            this.particles.forEach(particle => {
-                if (particle.element.parentNode) {
-                    particle.element.parentNode.removeChild(particle.element);
-                }
-            });
+            this.particles.forEach(particle => particle.element.remove());
         }
     }
 }
@@ -371,33 +388,49 @@ function showGiftBox() {
 // 修改烟花大结局函数
 function startGrandFinale() {
     console.log('开始烟花表演');
-    
-    // 确保清除所有现有效果
     animationManager.clearEffects();
     
-    // 创建烟花的函数
-    function createFireworks() {
-        for (let i = 0; i < 5; i++) {
-            const x = Math.random() * window.innerWidth;
-            const y = window.innerHeight * (0.3 + Math.random() * 0.4);
-            const firework = new Firework(x, y);
-            firework.animate();
+    let fireworksCount = 0;
+    const maxFireworks = 50; // 总烟花数量
+    
+    function createFirework() {
+        if (fireworksCount >= maxFireworks) {
+            showBirthdayCake();
+            return;
         }
+        
+        // 创建多个烟花
+        for (let i = 0; i < 3; i++) {
+            const x = Math.random() * window.innerWidth;
+            const y = window.innerHeight * (0.2 + Math.random() * 0.3);
+            new Firework(x, y);
+        }
+        
+        fireworksCount += 3;
+        setTimeout(createFirework, 300);
     }
     
-    // 立即创建第一组烟花
-    createFireworks();
+    createFirework();
+}
+
+// 改进的蛋糕显示函数
+function showBirthdayCake() {
+    const cake = document.createElement('div');
+    cake.className = 'cake';
+    cake.innerHTML = `
+        <div class="cake-emoji">🎂</div>
+        <div class="birthday-text">生日快乐！</div>
+    `;
+    document.body.appendChild(cake);
     
-    // 持续创建烟花
-    const fireworksInterval = setInterval(createFireworks, 300);
-    
-    // 10秒后显示蛋糕
-    setTimeout(() => {
-        clearInterval(fireworksInterval);
-        // 清除所有烟花效果
-        document.getElementById('fireworks-container').innerHTML = '';
-        showBirthdayCake();
-    }, 10000);
+    // 使用 RAF 确保过渡动画正常工作
+    requestAnimationFrame(() => {
+        cake.classList.add('show');
+        setTimeout(() => {
+            const text = cake.querySelector('.birthday-text');
+            text.classList.add('show');
+        }, 500);
+    });
 }
 
 // 页面加载完成后初始化
