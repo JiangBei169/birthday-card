@@ -203,47 +203,78 @@ function initializeSlideshow() {
     console.log('初始化幻灯片...');
     const container = document.getElementById('slides-container');
     container.innerHTML = '';
-    slideIndex = 1;
+    let loadedImages = 0;
+    let failedImages = 0;
     
-    // 预加载音乐
-    const music = document.getElementById('bgMusic');
-    music.load();
-    
-    // 加载所有图片
-    for (let i = 1; i <= CONFIG.totalImages; i++) {
-        const slide = document.createElement('div');
-        slide.className = 'slides';
-        
-        const img = document.createElement('img');
-        img.src = `images/${i}.jpg`;
-        img.onload = () => {
-            console.log(`图片 ${i} 加载完成`);
-            if (i === 1) {
-                setTimeout(() => {
-                    slide.classList.add('active');
-                }, 100);
-            }
-        };
-        
-        slide.appendChild(img);
-        container.appendChild(slide);
+    // 预加载所有图片
+    function preloadImage(index) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = `images/${index}.jpg`;
+            
+            img.onload = () => {
+                console.log(`图片 ${index} 加载成功`);
+                resolve(img);
+            };
+            
+            img.onerror = () => {
+                console.error(`图片 ${index} 加载失败`);
+                reject();
+            };
+        });
     }
     
-    showSlides(1);
-    startAutoSlide();
+    // 创建幻灯片
+    function createSlide(index, img) {
+        const slide = document.createElement('div');
+        slide.className = 'slides';
+        slide.appendChild(img);
+        container.appendChild(slide);
+        
+        if (index === 1) {
+            slide.classList.add('active');
+        }
+    }
+    
+    // 加载所有图片
+    const imagePromises = [];
+    for (let i = 1; i <= CONFIG.totalImages; i++) {
+        imagePromises.push(
+            preloadImage(i)
+                .then(img => {
+                    loadedImages++;
+                    createSlide(i, img);
+                })
+                .catch(() => {
+                    failedImages++;
+                })
+        );
+    }
+    
+    // 等待所有图片加载完成
+    Promise.all(imagePromises).then(() => {
+        console.log(`所有图片加载完成。成功: ${loadedImages}, 失败: ${failedImages}`);
+        if (loadedImages > 0) {
+            showSlides(1);
+            startAutoSlide();
+        } else {
+            console.error('没有图片加载成功');
+        }
+    });
 }
 
 function showSlides(n) {
     const slides = document.getElementsByClassName("slides");
-    if (!slides.length) return;
+    if (!slides.length) {
+        console.error('没有找到幻灯片元素');
+        return;
+    }
     
     if (n > slides.length) slideIndex = 1;
     if (n < 1) slideIndex = slides.length;
     
     // 获取当前活动的幻灯片
     const currentSlide = document.querySelector('.slides.active');
-    
-    // 如果有当前幻灯片，添加淡出效果
     if (currentSlide) {
         currentSlide.classList.add('fade-out');
         currentSlide.classList.remove('active');
@@ -251,19 +282,14 @@ function showSlides(n) {
     
     // 显示新的幻灯片
     const newSlide = slides[slideIndex-1];
-    
-    // 使用 setTimeout 确保转场动画顺滑
     setTimeout(() => {
-        // 移除所有幻灯片的过渡类
         Array.from(slides).forEach(slide => {
             slide.classList.remove('active', 'fade-out');
         });
-        
-        // 激活新的幻灯片
         newSlide.classList.add('active');
     }, 50);
     
-    console.log(`显示第 ${slideIndex} 张图片`);
+    console.log(`显示第 ${slideIndex}/${slides.length} 张图片`);
 }
 
 function changeSlide(n) {
