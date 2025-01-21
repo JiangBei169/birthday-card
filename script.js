@@ -23,7 +23,7 @@ class Firework {
         const colors = ['#ff69b4', '#ff1493', '#ffb6c1', '#ffc0cb'];
         for (let i = 0; i < 50; i++) {
             const angle = (Math.PI * 2 * i) / 50;
-            const velocity = 2 + Math.random() * 2;
+            const velocity = 3 + Math.random() * 3;
             const particle = document.createElement('div');
             particle.className = 'firework-particle';
             particle.style.left = this.x + 'px';
@@ -76,17 +76,17 @@ class Sakura {
     }
 
     reset() {
-        const size = 10 + Math.random() * 15;
+        const size = 15 + Math.random() * 20;
         this.element.style.width = size + 'px';
         this.element.style.height = size + 'px';
         this.x = Math.random() * window.innerWidth;
         this.y = -30;
         this.rotation = Math.random() * 360;
         this.speed = 1 + Math.random() * 2;
-        this.rotationSpeed = (Math.random() - 0.5) * 2;
-        this.oscillationSpeed = 1.5 + Math.random();
-        this.oscillationDistance = 50 + Math.random() * 50;
-        this.element.style.opacity = 0.6 + Math.random() * 0.4;
+        this.rotationSpeed = (Math.random() - 0.5) * 4;
+        this.oscillationSpeed = 2 + Math.random();
+        this.oscillationDistance = 100 + Math.random() * 50;
+        this.element.style.opacity = 0.7 + Math.random() * 0.3;
     }
 
     animate() {
@@ -111,7 +111,7 @@ class AnimationManager {
         this.isPasswordScreen = true;
     }
 
-    createSakuras(count = 20) {
+    createSakuras(count = 30) {
         for (let i = 0; i < count; i++) {
             const sakura = new Sakura();
             this.sakuras.push(sakura);
@@ -129,7 +129,7 @@ class AnimationManager {
             const x = Math.random() * window.innerWidth;
             const y = Math.random() * (window.innerHeight * 0.6);
             this.createFirework(x, y);
-            setTimeout(() => this.startFireworks(), 1000);
+            setTimeout(() => this.startFireworks(), 800);
         }
     }
 }
