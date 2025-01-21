@@ -1,9 +1,10 @@
 // 配置
 const CONFIG = {
-    password: '1227',
+    password: '1234',
     totalImages: 45,
     slideInterval: 5000,
-    autoPlayMusic: true
+    autoPlayMusic: true,
+    sakuraCount: 100,
 };
 
 // 全局变量
@@ -82,10 +83,10 @@ class Sakura {
         this.x = Math.random() * window.innerWidth;
         this.y = -30;
         this.rotation = Math.random() * 360;
-        this.speed = 1 + Math.random() * 2;
-        this.rotationSpeed = (Math.random() - 0.5) * 4;
-        this.oscillationSpeed = 2 + Math.random();
-        this.oscillationDistance = 100 + Math.random() * 50;
+        this.speed = 2 + Math.random() * 3;
+        this.rotationSpeed = (Math.random() - 0.5) * 6;
+        this.oscillationSpeed = 2.5 + Math.random();
+        this.oscillationDistance = 150 + Math.random() * 100;
         this.element.style.opacity = 0.7 + Math.random() * 0.3;
     }
 
@@ -109,9 +110,10 @@ class AnimationManager {
     constructor() {
         this.sakuras = [];
         this.isPasswordScreen = true;
+        this.fireworks = [];
     }
 
-    createSakuras(count = 30) {
+    createSakuras(count = CONFIG.sakuraCount) {
         for (let i = 0; i < count; i++) {
             const sakura = new Sakura();
             this.sakuras.push(sakura);
@@ -131,6 +133,53 @@ class AnimationManager {
             this.createFirework(x, y);
             setTimeout(() => this.startFireworks(), 800);
         }
+    }
+
+    async startEndingSequence() {
+        document.querySelector('.slideshow-container').style.display = 'none';
+        
+        const giftBox = document.createElement('div');
+        giftBox.className = 'gift-box';
+        giftBox.innerHTML = '🎁';
+        document.body.appendChild(giftBox);
+        giftBox.style.display = 'block';
+        
+        giftBox.onclick = async () => {
+            giftBox.style.display = 'none';
+            this.startGrandFinale();
+            
+            await new Promise(resolve => setTimeout(resolve, 10000));
+            this.showCake();
+        };
+    }
+
+    startGrandFinale() {
+        const createFireworks = () => {
+            for (let i = 0; i < 5; i++) {
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * (window.innerHeight * 0.6);
+                this.createFirework(x, y);
+            }
+        };
+
+        const interval = setInterval(createFireworks, 200);
+        
+        setTimeout(() => clearInterval(interval), 10000);
+    }
+
+    showCake() {
+        const cake = document.createElement('div');
+        cake.className = 'cake';
+        cake.innerHTML = `
+            <div style="font-size: 100px">🎂</div>
+            <div class="birthday-text">生日快乐！</div>
+        `;
+        document.body.appendChild(cake);
+        cake.style.display = 'block';
+        
+        setTimeout(() => {
+            cake.querySelector('.birthday-text').classList.add('show');
+        }, 100);
     }
 }
 
@@ -165,47 +214,28 @@ function checkAccess() {
 
 // 幻灯片相关函数
 function initializeSlideshow() {
-    console.log('开始初始化幻灯片...');
     const container = document.getElementById('slides-container');
-    if (!container) {
-        console.error('找不到 slides-container');
-        return;
+    container.innerHTML = '';
+    let loadedImages = 0;
+    
+    for (let i = 1; i <= CONFIG.totalImages; i++) {
+        const slide = document.createElement('div');
+        slide.className = 'slides';
+        
+        const img = document.createElement('img');
+        img.src = `images/${i}.jpg`;
+        img.onload = () => {
+            loadedImages++;
+            if (loadedImages === CONFIG.totalImages) {
+                showEndingSequence();
+            }
+        };
+        
+        slide.appendChild(img);
+        container.appendChild(slide);
     }
     
-    container.innerHTML = '';
-    
-    // 先加载第一张图片
-    const firstSlide = document.createElement('div');
-    firstSlide.className = 'slides active';
-    const firstImg = document.createElement('img');
-    firstImg.src = `images/1.jpg`;
-    firstImg.onload = () => {
-        console.log('第一张图片加载成功');
-        firstSlide.appendChild(firstImg);
-        container.appendChild(firstSlide);
-        
-        // 加载其余图片
-        for (let i = 2; i <= CONFIG.totalImages; i++) {
-            const slide = document.createElement('div');
-            slide.className = 'slides';
-            
-            const img = document.createElement('img');
-            img.src = `images/${i}.jpg`;
-            img.onload = () => {
-                console.log(`图片 ${i} 加载成功`);
-                slide.classList.add('loaded');
-            };
-            
-            slide.appendChild(img);
-            container.appendChild(slide);
-        }
-    };
-    
-    firstImg.onerror = () => {
-        console.error('第一张图片加载失败');
-        console.log('尝试的路径:', firstImg.src);
-    };
-    
+    showSlides(1);
     startAutoSlide();
 }
 
@@ -262,6 +292,14 @@ function playMusic() {
         music.pause();
         musicToggle.classList.remove('playing');
     }
+}
+
+// 添加结束序列函数
+function showEndingSequence() {
+    setTimeout(() => {
+        stopAutoSlide();
+        animationManager.startEndingSequence();
+    }, CONFIG.slideInterval);
 }
 
 // 页面加载完成后初始化
