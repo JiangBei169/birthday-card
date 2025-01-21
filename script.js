@@ -1,6 +1,6 @@
 // 配置
 const CONFIG = {
-    password: '1227',
+    password: '1234',
     totalImages: 45,
     slideInterval: 5000,
     autoPlayMusic: true,
@@ -21,10 +21,10 @@ class Firework {
     }
 
     createParticles() {
-        const colors = ['#ff69b4', '#ff1493', '#ffb6c1', '#ffc0cb'];
-        for (let i = 0; i < 50; i++) {
-            const angle = (Math.PI * 2 * i) / 50;
-            const velocity = 3 + Math.random() * 3;
+        const colors = ['#ff69b4', '#ff1493', '#ffb6c1', '#ffc0cb', '#ff0000', '#ffd700'];
+        for (let i = 0; i < 80; i++) {
+            const angle = (Math.PI * 2 * i) / 80;
+            const velocity = 4 + Math.random() * 4;
             const particle = document.createElement('div');
             particle.className = 'firework-particle';
             particle.style.left = this.x + 'px';
@@ -37,7 +37,8 @@ class Firework {
                 angle: angle,
                 x: this.x,
                 y: this.y,
-                alpha: 1
+                alpha: 1,
+                gravity: 0.05
             });
             
             document.getElementById('fireworks-container').appendChild(particle);
@@ -46,9 +47,10 @@ class Firework {
 
     animate() {
         this.particles.forEach(particle => {
+            particle.velocity *= 0.98;
             particle.x += Math.cos(particle.angle) * particle.velocity;
-            particle.y += Math.sin(particle.angle) * particle.velocity + 0.1;
-            particle.alpha -= 0.01;
+            particle.y += Math.sin(particle.angle) * particle.velocity + particle.gravity;
+            particle.alpha -= 0.005;
             
             particle.element.style.left = particle.x + 'px';
             particle.element.style.top = particle.y + 'px';
@@ -154,32 +156,44 @@ class AnimationManager {
     }
 
     startGrandFinale() {
-        const createFireworks = () => {
+        console.log('开始烟花表演');
+        document.getElementById('sakura-container').innerHTML = '';
+        
+        const fireworksInterval = setInterval(() => {
             for (let i = 0; i < 5; i++) {
                 const x = Math.random() * window.innerWidth;
-                const y = Math.random() * (window.innerHeight * 0.6);
+                const y = window.innerHeight * (0.3 + Math.random() * 0.4);
                 this.createFirework(x, y);
             }
-        };
+        }, 200);
 
-        const interval = setInterval(createFireworks, 200);
-        
-        setTimeout(() => clearInterval(interval), 10000);
+        setTimeout(() => {
+            clearInterval(fireworksInterval);
+            this.showCake();
+        }, 10000);
     }
 
     showCake() {
+        console.log('显示蛋糕');
         const cake = document.createElement('div');
         cake.className = 'cake';
         cake.innerHTML = `
-            <div style="font-size: 100px">🎂</div>
+            <div class="cake-emoji">🎂</div>
             <div class="birthday-text">生日快乐！</div>
         `;
         document.body.appendChild(cake);
-        cake.style.display = 'block';
-        
-        setTimeout(() => {
-            cake.querySelector('.birthday-text').classList.add('show');
-        }, 100);
+
+        requestAnimationFrame(() => {
+            cake.style.display = 'block';
+            cake.style.opacity = '0';
+            requestAnimationFrame(() => {
+                cake.style.transition = 'opacity 1s ease';
+                cake.style.opacity = '1';
+                setTimeout(() => {
+                    cake.querySelector('.birthday-text').classList.add('show');
+                }, 500);
+            });
+        });
     }
 }
 
@@ -214,29 +228,41 @@ function checkAccess() {
 
 // 幻灯片相关函数
 function initializeSlideshow() {
+    console.log('初始化幻灯片...');
     const container = document.getElementById('slides-container');
     container.innerHTML = '';
-    let loadedImages = 0;
-    
-    for (let i = 1; i <= CONFIG.totalImages; i++) {
-        const slide = document.createElement('div');
-        slide.className = 'slides';
-        
-        const img = document.createElement('img');
-        img.src = `images/${i}.jpg`;
-        img.onload = () => {
-            loadedImages++;
-            if (loadedImages === CONFIG.totalImages) {
-                showEndingSequence();
-            }
-        };
-        
-        slide.appendChild(img);
-        container.appendChild(slide);
+    let currentIndex = 1;
+
+    function loadNextImage() {
+        if (currentIndex <= CONFIG.totalImages) {
+            const slide = document.createElement('div');
+            slide.className = 'slides';
+            
+            const img = document.createElement('img');
+            img.src = `images/${currentIndex}.jpg`;
+            
+            img.onload = () => {
+                slide.appendChild(img);
+                container.appendChild(slide);
+                if (currentIndex === 1) {
+                    slide.classList.add('active');
+                }
+                currentIndex++;
+                loadNextImage();
+            };
+            
+            img.onerror = () => {
+                console.error(`图片 ${currentIndex} 加载失败`);
+                currentIndex++;
+                loadNextImage();
+            };
+        } else {
+            console.log('所有图片加载完成');
+            startAutoSlide();
+        }
     }
-    
-    showSlides(1);
-    startAutoSlide();
+
+    loadNextImage();
 }
 
 function showSlides(n) {
@@ -267,8 +293,16 @@ function changeSlide(n) {
 }
 
 function startAutoSlide() {
-    stopAutoSlide();
-    slideInterval = setInterval(() => changeSlide(1), CONFIG.slideInterval);
+    let currentSlide = 1;
+    slideInterval = setInterval(() => {
+        if (currentSlide >= CONFIG.totalImages) {
+            clearInterval(slideInterval);
+            showEndingSequence();
+            return;
+        }
+        changeSlide(1);
+        currentSlide++;
+    }, CONFIG.slideInterval);
 }
 
 function stopAutoSlide() {
@@ -296,10 +330,37 @@ function playMusic() {
 
 // 添加结束序列函数
 function showEndingSequence() {
+    console.log('开始结束序列');
+    // 淡出幻灯片
+    const slideshow = document.querySelector('.slideshow-container');
+    slideshow.style.transition = 'opacity 1s ease';
+    slideshow.style.opacity = '0';
+    
     setTimeout(() => {
-        stopAutoSlide();
-        animationManager.startEndingSequence();
-    }, CONFIG.slideInterval);
+        slideshow.style.display = 'none';
+        
+        // 显示礼物盒
+        const giftBox = document.createElement('div');
+        giftBox.className = 'gift-box';
+        giftBox.innerHTML = '🎁';
+        document.body.appendChild(giftBox);
+        
+        // 淡入礼物盒
+        setTimeout(() => {
+            giftBox.style.display = 'block';
+            giftBox.style.opacity = '0';
+            requestAnimationFrame(() => {
+                giftBox.style.transition = 'opacity 1s ease';
+                giftBox.style.opacity = '1';
+            });
+        }, 100);
+
+        // 点击礼物盒事件
+        giftBox.onclick = () => {
+            giftBox.style.display = 'none';
+            startGrandFinale();
+        };
+    }, 1000);
 }
 
 // 页面加载完成后初始化
