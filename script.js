@@ -119,117 +119,32 @@ class AnimationManager {
         this.sakuras = [];
         this.isPasswordScreen = true;
         this.fireworks = [];
-    }
-
-    createSakuras(count = CONFIG.sakuraCount) {
-        for (let i = 0; i < count; i++) {
-            const sakura = new Sakura();
-            this.sakuras.push(sakura);
-            sakura.animate();
-        }
+        this.isShowingPhotos = false;
     }
 
     createFirework(x, y) {
-        if (this.isPasswordScreen) {
+        if (this.isPasswordScreen || (!this.isShowingPhotos && !this.isPasswordScreen)) {
             const firework = new Firework(x, y);
             this.fireworks.push(firework);
             firework.animate();
         }
     }
 
-    clearFireworks() {
-        document.getElementById('fireworks-container').innerHTML = '';
-        this.fireworks = [];
-    }
-
-    startFireworks() {
-        if (this.isPasswordScreen) {
-            const x = Math.random() * window.innerWidth;
-            const y = Math.random() * (window.innerHeight * 0.6);
-            this.createFirework(x, y);
-            setTimeout(() => this.startFireworks(), 800);
-        }
-    }
-
-    async startEndingSequence() {
-        document.querySelector('.slideshow-container').style.display = 'none';
-        
-        const giftBox = document.createElement('div');
-        giftBox.className = 'gift-box';
-        giftBox.innerHTML = '🎁';
-        document.body.appendChild(giftBox);
-        giftBox.style.display = 'block';
-        
-        giftBox.onclick = async () => {
-            giftBox.style.display = 'none';
-            this.startGrandFinale();
-            
-            await new Promise(resolve => setTimeout(resolve, 10000));
-            this.showCake();
-        };
-    }
-
-    startGrandFinale() {
-        console.log('开始烟花表演');
-        
-        // 清除所有现有效果
-        animationManager.clearEffects();
-        
-        // 创建烟花的函数
-        function createFireworks() {
-            for (let i = 0; i < 5; i++) {
-                const x = Math.random() * window.innerWidth;
-                const y = window.innerHeight * (0.3 + Math.random() * 0.4);
-                const firework = new Firework(x, y);
-                firework.animate();
+    createSakuras(count = CONFIG.sakuraCount) {
+        if (this.isShowingPhotos) {
+            for (let i = 0; i < count; i++) {
+                const sakura = new Sakura();
+                this.sakuras.push(sakura);
+                sakura.animate();
             }
         }
-        
-        // 立即创建第一组烟花
-        createFireworks();
-        
-        // 持续创建烟花
-        const fireworksInterval = setInterval(createFireworks, 300);
-        
-        // 10秒后显示蛋糕
-        setTimeout(() => {
-            clearInterval(fireworksInterval);
-            // 清除所有烟花效果
-            document.getElementById('fireworks-container').innerHTML = '';
-            showBirthdayCake();
-        }, 10000);
-    }
-
-    showCake() {
-        console.log('显示蛋糕');
-        const cake = document.createElement('div');
-        cake.className = 'cake';
-        cake.innerHTML = `
-            <div class="cake-emoji">🎂</div>
-            <div class="candle">️</div>
-            <div class="birthday-text">生日快乐！</div>
-        `;
-        document.body.appendChild(cake);
-
-        requestAnimationFrame(() => {
-            cake.style.display = 'block';
-            cake.style.opacity = '0';
-            requestAnimationFrame(() => {
-                cake.style.transition = 'opacity 1s ease';
-                cake.style.opacity = '1';
-                setTimeout(() => {
-                    const text = cake.querySelector('.birthday-text');
-                    if (text) {
-                        text.classList.add('show');
-                    }
-                }, 500);
-            });
-        });
     }
 
     clearEffects() {
         document.getElementById('sakura-container').innerHTML = '';
         document.getElementById('fireworks-container').innerHTML = '';
+        this.sakuras = [];
+        this.fireworks = [];
     }
 }
 
@@ -245,6 +160,7 @@ function checkAccess() {
         document.getElementById('password-layer').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         animationManager.isPasswordScreen = false;
+        animationManager.isShowingPhotos = true;
         animationManager.createSakuras();
         
         // 初始化幻灯片并开始自动播放
@@ -346,8 +262,6 @@ function startAutoSlide() {
         currentSlideCount++;
         if (currentSlideCount > CONFIG.totalImages) {
             stopAutoSlide();
-            // 清除所有效果后再显示礼物盒
-            animationManager.clearEffects();
             showEndingSequence();
             return;
         }
@@ -406,15 +320,19 @@ function playMusic() {
 // 添加结束序列函数
 function showEndingSequence() {
     console.log('开始结束序列');
+    // 设置状态
+    animationManager.isShowingPhotos = false;
+    
     // 淡出幻灯片
     const slideshow = document.querySelector('.slideshow-container');
     slideshow.style.transition = 'opacity 1s ease';
     slideshow.style.opacity = '0';
     
+    // 清除所有效果
+    animationManager.clearEffects();
+    
     setTimeout(() => {
         slideshow.style.display = 'none';
-        
-        // 显示礼物盒
         showGiftBox();
     }, 1000);
 }
@@ -448,6 +366,38 @@ function showGiftBox() {
             startGrandFinale();
         }, 1000);
     };
+}
+
+// 修改烟花大结局函数
+function startGrandFinale() {
+    console.log('开始烟花表演');
+    
+    // 确保清除所有现有效果
+    animationManager.clearEffects();
+    
+    // 创建烟花的函数
+    function createFireworks() {
+        for (let i = 0; i < 5; i++) {
+            const x = Math.random() * window.innerWidth;
+            const y = window.innerHeight * (0.3 + Math.random() * 0.4);
+            const firework = new Firework(x, y);
+            firework.animate();
+        }
+    }
+    
+    // 立即创建第一组烟花
+    createFireworks();
+    
+    // 持续创建烟花
+    const fireworksInterval = setInterval(createFireworks, 300);
+    
+    // 10秒后显示蛋糕
+    setTimeout(() => {
+        clearInterval(fireworksInterval);
+        // 清除所有烟花效果
+        document.getElementById('fireworks-container').innerHTML = '';
+        showBirthdayCake();
+    }, 10000);
 }
 
 // 页面加载完成后初始化
