@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>生日快乐！</title>
     <link rel="stylesheet" href="style.css">
+    <!-- 添加Google字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- 音频播放器 -->
@@ -14,35 +16,45 @@
     
     <!-- 音乐控制按钮 -->
     <div id="musicControl" class="music-control">
-        <button id="musicToggle">🎵</button>
+        <button id="musicToggle">
+            <span class="music-icon">♫</span>
+        </button>
     </div>
 
-    <!-- 烟花容器 -->
-    <div id="fireworks-container"></div>
-    
-    <!-- 樱花容器 -->
-    <div id="sakura-container"></div>
+    <!-- 背景动画容器 -->
+    <div class="animation-wrapper">
+        <div id="fireworks-container"></div>
+        <div id="sakura-container"></div>
+        <div class="stars"></div>
+    </div>
 
     <!-- 密码输入层 -->
     <div id="password-layer">
-        <div class="password-container">
-            <h2>请输入密码</h2>
-            <input type="password" id="password-input" placeholder="输入密码">
+        <div class="password-container glass-effect">
+            <h2 class="welcome-text">Welcome</h2>
+            <div class="input-group">
+                <input type="password" id="password-input" placeholder="Enter Password">
+                <button class="submit-btn" onclick="checkAccess()">✨</button>
+            </div>
             <p id="password-error" class="error"></p>
         </div>
     </div>
 
     <!-- 主内容区 -->
     <div id="main-content" style="display: none;">
-        <h1 class="title">生日快乐！</h1>
+        <h1 class="title">Happy Birthday!</h1>
         
         <!-- 幻灯片容器 -->
-        <div class="slideshow-container">
+        <div class="slideshow-container glass-effect">
             <div id="slides-container"></div>
             
-            <!-- 上一张/下一张按钮 -->
-            <button class="prev" onclick="changeSlide(-1)">❮</button>
-            <button class="next" onclick="changeSlide(1)">❯</button>
+            <!-- 导航按钮 -->
+            <button class="nav-btn prev" onclick="changeSlide(-1)">
+                <span class="nav-icon">❮</span>
+            </button>
+            <button class="nav-btn next" onclick="changeSlide(1)">
+                <span class="nav-icon">❯</span>
+            </button>
         </div>
     </div>
 
