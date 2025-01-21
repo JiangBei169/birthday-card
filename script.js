@@ -1,6 +1,6 @@
 // 配置
 const CONFIG = {
-    password: '1234',
+    password: '1227',
     totalImages: 45,
     slideInterval: 5000,
     autoPlayMusic: true
@@ -139,8 +139,10 @@ const animationManager = new AnimationManager();
 
 // 检查访问权限
 function checkAccess() {
+    console.log('检查密码...');
     const input = document.getElementById('password-input').value;
     if (input === CONFIG.password) {
+        console.log('密码正确，开始加载图片...');
         document.getElementById('password-layer').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         animationManager.isPasswordScreen = false;
@@ -150,10 +152,10 @@ function checkAccess() {
             playMusic();
         }
     } else {
+        console.log('密码错误');
         const error = document.getElementById('password-error');
         if (error) {
             error.textContent = '密码错误，请重试';
-            // 创建错误提示时的烟花效果
             const input = document.getElementById('password-input');
             const rect = input.getBoundingClientRect();
             animationManager.createFirework(rect.left + rect.width / 2, rect.top);
@@ -163,34 +165,71 @@ function checkAccess() {
 
 // 幻灯片相关函数
 function initializeSlideshow() {
+    console.log('开始初始化幻灯片...');
     const container = document.getElementById('slides-container');
-    container.innerHTML = '';
-    
-    for (let i = 1; i <= CONFIG.totalImages; i++) {
-        const slide = document.createElement('div');
-        slide.className = 'slides';
-        
-        const img = document.createElement('img');
-        img.src = `images/${i}.jpg`;
-        img.onload = () => slide.classList.add('loaded');
-        
-        slide.appendChild(img);
-        container.appendChild(slide);
+    if (!container) {
+        console.error('找不到 slides-container');
+        return;
     }
     
-    showSlides(1);
+    container.innerHTML = '';
+    
+    // 先加载第一张图片
+    const firstSlide = document.createElement('div');
+    firstSlide.className = 'slides active';
+    const firstImg = document.createElement('img');
+    firstImg.src = `images/1.jpg`;
+    firstImg.onload = () => {
+        console.log('第一张图片加载成功');
+        firstSlide.appendChild(firstImg);
+        container.appendChild(firstSlide);
+        
+        // 加载其余图片
+        for (let i = 2; i <= CONFIG.totalImages; i++) {
+            const slide = document.createElement('div');
+            slide.className = 'slides';
+            
+            const img = document.createElement('img');
+            img.src = `images/${i}.jpg`;
+            img.onload = () => {
+                console.log(`图片 ${i} 加载成功`);
+                slide.classList.add('loaded');
+            };
+            
+            slide.appendChild(img);
+            container.appendChild(slide);
+        }
+    };
+    
+    firstImg.onerror = () => {
+        console.error('第一张图片加载失败');
+        console.log('尝试的路径:', firstImg.src);
+    };
+    
     startAutoSlide();
 }
 
 function showSlides(n) {
     const slides = document.getElementsByClassName("slides");
-    if (!slides.length) return;
+    if (!slides.length) {
+        console.error('没有找到幻灯片元素');
+        return;
+    }
     
     if (n > slides.length) slideIndex = 1;
     if (n < 1) slideIndex = slides.length;
     
-    Array.from(slides).forEach(slide => slide.classList.remove('active'));
+    // 隐藏所有幻灯片
+    Array.from(slides).forEach(slide => {
+        slide.style.display = "none";
+        slide.classList.remove('active');
+    });
+    
+    // 显示当前幻灯片
+    slides[slideIndex-1].style.display = "block";
     slides[slideIndex-1].classList.add('active');
+    
+    console.log(`显示第 ${slideIndex} 张图片`);
 }
 
 function changeSlide(n) {
