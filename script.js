@@ -1,6 +1,6 @@
 // 配置
 const CONFIG = {
-    password: '1234',
+    password: '1227',
     totalImages: 45,
     slideInterval: 5000,
     autoPlayMusic: true,
@@ -210,7 +210,10 @@ function checkAccess() {
         document.getElementById('main-content').style.display = 'block';
         animationManager.isPasswordScreen = false;
         animationManager.createSakuras();
+        
+        // 初始化幻灯片并开始自动播放
         initializeSlideshow();
+        
         if (CONFIG.autoPlayMusic) {
             playMusic();
         }
@@ -231,60 +234,43 @@ function initializeSlideshow() {
     console.log('初始化幻灯片...');
     const container = document.getElementById('slides-container');
     container.innerHTML = '';
-    let currentIndex = 1;
-
-    function loadNextImage() {
-        if (currentIndex <= CONFIG.totalImages) {
-            const slide = document.createElement('div');
-            slide.className = 'slides';
-            
-            const img = document.createElement('img');
-            img.src = `images/${currentIndex}.jpg`;
-            
-            img.onload = () => {
-                slide.appendChild(img);
-                container.appendChild(slide);
-                if (currentIndex === 1) {
-                    slide.classList.add('active');
-                }
-                currentIndex++;
-                loadNextImage();
-            };
-            
-            img.onerror = () => {
-                console.error(`图片 ${currentIndex} 加载失败`);
-                currentIndex++;
-                loadNextImage();
-            };
-        } else {
-            console.log('所有图片加载完成');
-            startAutoSlide();
-        }
+    slideIndex = 1; // 重置幻灯片索引
+    
+    // 加载所有图片
+    for (let i = 1; i <= CONFIG.totalImages; i++) {
+        const slide = document.createElement('div');
+        slide.className = 'slides';
+        
+        const img = document.createElement('img');
+        img.src = `images/${i}.jpg`;
+        img.onload = () => {
+            console.log(`图片 ${i} 加载完成`);
+            if (i === 1) {
+                slide.classList.add('active');
+            }
+        };
+        
+        slide.appendChild(img);
+        container.appendChild(slide);
     }
-
-    loadNextImage();
+    
+    // 显示第一张图片并开始自动播放
+    showSlides(1);
+    startAutoSlide();
 }
 
 function showSlides(n) {
     const slides = document.getElementsByClassName("slides");
-    if (!slides.length) {
-        console.error('没有找到幻灯片元素');
-        return;
-    }
+    if (!slides.length) return;
     
     if (n > slides.length) slideIndex = 1;
     if (n < 1) slideIndex = slides.length;
     
-    // 隐藏所有幻灯片
     Array.from(slides).forEach(slide => {
-        slide.style.display = "none";
         slide.classList.remove('active');
     });
     
-    // 显示当前幻灯片
-    slides[slideIndex-1].style.display = "block";
     slides[slideIndex-1].classList.add('active');
-    
     console.log(`显示第 ${slideIndex} 张图片`);
 }
 
@@ -293,21 +279,24 @@ function changeSlide(n) {
 }
 
 function startAutoSlide() {
-    let currentSlide = 1;
+    console.log('开始自动播放');
+    stopAutoSlide(); // 先清除可能存在的定时器
+    
     slideInterval = setInterval(() => {
-        if (currentSlide >= CONFIG.totalImages) {
-            clearInterval(slideInterval);
+        // 检查是否到达最后一张
+        if (slideIndex >= CONFIG.totalImages) {
+            stopAutoSlide();
             showEndingSequence();
             return;
         }
         changeSlide(1);
-        currentSlide++;
     }, CONFIG.slideInterval);
 }
 
 function stopAutoSlide() {
     if (slideInterval) {
         clearInterval(slideInterval);
+        slideInterval = null;
     }
 }
 
@@ -372,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // 幻灯片控制事件
+    // 幻灯片容器的鼠标事件
     const slideshowContainer = document.querySelector('.slideshow-container');
     if (slideshowContainer) {
         slideshowContainer.addEventListener('mouseenter', stopAutoSlide);
