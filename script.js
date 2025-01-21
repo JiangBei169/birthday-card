@@ -130,9 +130,11 @@ class AnimationManager {
     }
 
     createFirework(x, y) {
-        const firework = new Firework(x, y);
-        this.fireworks.push(firework);
-        firework.animate();
+        if (this.isPasswordScreen) {
+            const firework = new Firework(x, y);
+            this.fireworks.push(firework);
+            firework.animate();
+        }
     }
 
     clearFireworks() {
@@ -170,7 +172,7 @@ class AnimationManager {
     startGrandFinale() {
         console.log('开始烟花表演');
         
-        // 清除现有效果
+        // 清除所有现有效果
         animationManager.clearEffects();
         
         // 创建烟花的函数
@@ -183,7 +185,7 @@ class AnimationManager {
             }
         }
         
-        // 立即创建一组烟花
+        // 立即创建第一组烟花
         createFireworks();
         
         // 持续创建烟花
@@ -192,6 +194,8 @@ class AnimationManager {
         // 10秒后显示蛋糕
         setTimeout(() => {
             clearInterval(fireworksInterval);
+            // 清除所有烟花效果
+            document.getElementById('fireworks-container').innerHTML = '';
             showBirthdayCake();
         }, 10000);
     }
@@ -202,7 +206,7 @@ class AnimationManager {
         cake.className = 'cake';
         cake.innerHTML = `
             <div class="cake-emoji">🎂</div>
-            <div class="candle">��️</div>
+            <div class="candle">️</div>
             <div class="birthday-text">生日快乐！</div>
         `;
         document.body.appendChild(cake);
@@ -335,12 +339,15 @@ function changeSlide(n) {
 
 function startAutoSlide() {
     console.log('开始自动播放');
-    stopAutoSlide(); // 先清除可能存在的定时器
+    stopAutoSlide();
+    let currentSlideCount = 1;
     
     slideInterval = setInterval(() => {
-        // 检查是否到达最后一张
-        if (slideIndex >= CONFIG.totalImages) {
+        currentSlideCount++;
+        if (currentSlideCount > CONFIG.totalImages) {
             stopAutoSlide();
+            // 清除所有效果后再显示礼物盒
+            animationManager.clearEffects();
             showEndingSequence();
             return;
         }
