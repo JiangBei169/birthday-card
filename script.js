@@ -5,6 +5,7 @@ const CONFIG = {
     slideInterval: 5000,
     autoPlayMusic: true,
     sakuraCount: 100,
+    musicVolume: 0.5
 };
 
 // 全局变量
@@ -234,7 +235,11 @@ function initializeSlideshow() {
     console.log('初始化幻灯片...');
     const container = document.getElementById('slides-container');
     container.innerHTML = '';
-    slideIndex = 1; // 重置幻灯片索引
+    slideIndex = 1;
+    
+    // 预加载音乐
+    const music = document.getElementById('bgMusic');
+    music.load();
     
     // 加载所有图片
     for (let i = 1; i <= CONFIG.totalImages; i++) {
@@ -246,7 +251,9 @@ function initializeSlideshow() {
         img.onload = () => {
             console.log(`图片 ${i} 加载完成`);
             if (i === 1) {
-                slide.classList.add('active');
+                setTimeout(() => {
+                    slide.classList.add('active');
+                }, 100);
             }
         };
         
@@ -254,7 +261,6 @@ function initializeSlideshow() {
         container.appendChild(slide);
     }
     
-    // 显示第一张图片并开始自动播放
     showSlides(1);
     startAutoSlide();
 }
@@ -266,11 +272,29 @@ function showSlides(n) {
     if (n > slides.length) slideIndex = 1;
     if (n < 1) slideIndex = slides.length;
     
-    Array.from(slides).forEach(slide => {
-        slide.classList.remove('active');
-    });
+    // 获取当前活动的幻灯片
+    const currentSlide = document.querySelector('.slides.active');
     
-    slides[slideIndex-1].classList.add('active');
+    // 如果有当前幻灯片，添加淡出效果
+    if (currentSlide) {
+        currentSlide.classList.add('fade-out');
+        currentSlide.classList.remove('active');
+    }
+    
+    // 显示新的幻灯片
+    const newSlide = slides[slideIndex-1];
+    
+    // 使用 setTimeout 确保转场动画顺滑
+    setTimeout(() => {
+        // 移除所有幻灯片的过渡类
+        Array.from(slides).forEach(slide => {
+            slide.classList.remove('active', 'fade-out');
+        });
+        
+        // 激活新的幻灯片
+        newSlide.classList.add('active');
+    }, 50);
+    
     console.log(`显示第 ${slideIndex} 张图片`);
 }
 
@@ -305,16 +329,40 @@ function playMusic() {
     const music = document.getElementById('bgMusic');
     const musicToggle = document.getElementById('musicToggle');
     
+    // 设置音量
+    music.volume = CONFIG.musicVolume;
+    
+    // 确保音乐循环播放
+    music.loop = true;
+    
     if (music.paused) {
-        music.play().then(() => {
-            musicToggle.classList.add('playing');
-        }).catch(error => {
-            console.log('自动播放失败:', error);
-        });
+        // 播放音乐
+        const playPromise = music.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                console.log('音乐开始播放');
+                musicToggle.classList.add('playing');
+            }).catch(error => {
+                console.log('自动播放失败:', error);
+            });
+        }
     } else {
         music.pause();
         musicToggle.classList.remove('playing');
     }
+    
+    // 添加错误处理
+    music.addEventListener('error', (e) => {
+        console.error('音乐播放错误:', e);
+    });
+    
+    // 添加结束处理
+    music.addEventListener('ended', () => {
+        console.log('音乐播放结束，重新开始');
+        music.currentTime = 0;
+        music.play();
+    });
 }
 
 // 添加结束序列函数
@@ -373,4 +421,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 开始动画
     animationManager.startFireworks();
+    
+    // 初始化音频元素
+    const music = document.getElementById('bgMusic');
+    music.volume = CONFIG.musicVolume;
+    music.load();
+    
+    // 添加音频事件监听
+    music.addEventListener('play', () => {
+        console.log('音乐开始播放');
+    });
+    
+    music.addEventListener('pause', () => {
+        console.log('音乐暂停');
+    });
 });
