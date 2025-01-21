@@ -22,10 +22,13 @@ class Firework {
     }
 
     createParticles() {
-        const colors = ['#ff69b4', '#ff1493', '#ffb6c1', '#ffc0cb', '#ff0000', '#ffd700'];
-        for (let i = 0; i < 80; i++) {
-            const angle = (Math.PI * 2 * i) / 80;
-            const velocity = 4 + Math.random() * 4;
+        const colors = [
+            '#ff69b4', '#ff1493', '#ffb6c1', '#ffc0cb', 
+            '#ff0000', '#ffd700', '#ff4500', '#00ff00'
+        ];
+        for (let i = 0; i < 100; i++) {
+            const angle = (Math.PI * 2 * i) / 100;
+            const velocity = 5 + Math.random() * 5;
             const particle = document.createElement('div');
             particle.className = 'firework-particle';
             particle.style.left = this.x + 'px';
@@ -39,7 +42,7 @@ class Firework {
                 x: this.x,
                 y: this.y,
                 alpha: 1,
-                gravity: 0.05
+                gravity: 0.02
             });
             
             document.getElementById('fireworks-container').appendChild(particle);
@@ -48,24 +51,26 @@ class Firework {
 
     animate() {
         this.particles.forEach(particle => {
-            particle.velocity *= 0.98;
+            particle.velocity *= 0.99;
             particle.x += Math.cos(particle.angle) * particle.velocity;
             particle.y += Math.sin(particle.angle) * particle.velocity + particle.gravity;
-            particle.alpha -= 0.005;
+            particle.alpha -= 0.003;
             
             particle.element.style.left = particle.x + 'px';
             particle.element.style.top = particle.y + 'px';
             particle.element.style.opacity = particle.alpha;
-            
-            if (particle.alpha <= 0) {
-                particle.element.remove();
-            }
         });
         
         this.particles = this.particles.filter(particle => particle.alpha > 0);
         
         if (this.particles.length > 0) {
             requestAnimationFrame(() => this.animate());
+        } else {
+            this.particles.forEach(particle => {
+                if (particle.element.parentNode) {
+                    particle.element.parentNode.removeChild(particle.element);
+                }
+            });
         }
     }
 }
@@ -126,7 +131,13 @@ class AnimationManager {
 
     createFirework(x, y) {
         const firework = new Firework(x, y);
+        this.fireworks.push(firework);
         firework.animate();
+    }
+
+    clearFireworks() {
+        document.getElementById('fireworks-container').innerHTML = '';
+        this.fireworks = [];
     }
 
     startFireworks() {
@@ -158,19 +169,30 @@ class AnimationManager {
 
     startGrandFinale() {
         console.log('开始烟花表演');
-        document.getElementById('sakura-container').innerHTML = '';
         
-        const fireworksInterval = setInterval(() => {
+        // 清除现有效果
+        animationManager.clearEffects();
+        
+        // 创建烟花的函数
+        function createFireworks() {
             for (let i = 0; i < 5; i++) {
                 const x = Math.random() * window.innerWidth;
                 const y = window.innerHeight * (0.3 + Math.random() * 0.4);
-                this.createFirework(x, y);
+                const firework = new Firework(x, y);
+                firework.animate();
             }
-        }, 200);
-
+        }
+        
+        // 立即创建一组烟花
+        createFireworks();
+        
+        // 持续创建烟花
+        const fireworksInterval = setInterval(createFireworks, 300);
+        
+        // 10秒后显示蛋糕
         setTimeout(() => {
             clearInterval(fireworksInterval);
-            this.showCake();
+            showBirthdayCake();
         }, 10000);
     }
 
@@ -180,6 +202,7 @@ class AnimationManager {
         cake.className = 'cake';
         cake.innerHTML = `
             <div class="cake-emoji">🎂</div>
+            <div class="candle">��️</div>
             <div class="birthday-text">生日快乐！</div>
         `;
         document.body.appendChild(cake);
@@ -191,10 +214,18 @@ class AnimationManager {
                 cake.style.transition = 'opacity 1s ease';
                 cake.style.opacity = '1';
                 setTimeout(() => {
-                    cake.querySelector('.birthday-text').classList.add('show');
+                    const text = cake.querySelector('.birthday-text');
+                    if (text) {
+                        text.classList.add('show');
+                    }
                 }, 500);
             });
         });
+    }
+
+    clearEffects() {
+        document.getElementById('sakura-container').innerHTML = '';
+        document.getElementById('fireworks-container').innerHTML = '';
     }
 }
 
@@ -377,27 +408,39 @@ function showEndingSequence() {
         slideshow.style.display = 'none';
         
         // 显示礼物盒
-        const giftBox = document.createElement('div');
-        giftBox.className = 'gift-box';
-        giftBox.innerHTML = '🎁';
-        document.body.appendChild(giftBox);
-        
-        // 淡入礼物盒
-        setTimeout(() => {
-            giftBox.style.display = 'block';
-            giftBox.style.opacity = '0';
-            requestAnimationFrame(() => {
-                giftBox.style.transition = 'opacity 1s ease';
-                giftBox.style.opacity = '1';
-            });
-        }, 100);
-
-        // 点击礼物盒事件
-        giftBox.onclick = () => {
-            giftBox.style.display = 'none';
-            startGrandFinale();
-        };
+        showGiftBox();
     }, 1000);
+}
+
+// 修改显示礼物盒函数
+function showGiftBox() {
+    console.log('显示礼物盒');
+    const giftBox = document.createElement('div');
+    giftBox.className = 'gift-box';
+    giftBox.innerHTML = '🎁';
+    document.body.appendChild(giftBox);
+    
+    // 淡入礼物盒
+    requestAnimationFrame(() => {
+        giftBox.style.display = 'block';
+        giftBox.style.opacity = '0';
+        requestAnimationFrame(() => {
+            giftBox.style.transition = 'opacity 1s ease';
+            giftBox.style.opacity = '1';
+        });
+    });
+
+    // 点击礼物盒事件
+    giftBox.onclick = () => {
+        console.log('礼物盒被点击');
+        // 淡出礼物盒
+        giftBox.style.opacity = '0';
+        setTimeout(() => {
+            giftBox.remove();
+            // 开始烟花表演
+            startGrandFinale();
+        }, 1000);
+    };
 }
 
 // 页面加载完成后初始化
