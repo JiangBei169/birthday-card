@@ -527,31 +527,31 @@ function showLetter() {
     `;
     document.body.appendChild(envelope);
 
-    // 信封打开动画
+    // 信封打开动画，延长到3秒后打开
     setTimeout(() => {
         envelope.classList.add('open');
         
-        // 显示信纸
+        // 信封打开4秒后显示信纸
         setTimeout(() => {
             const letter = document.createElement('div');
             letter.className = 'letter';
             document.body.appendChild(letter);
 
-            // 逐字显示文本
-            const text = "亲爱的，生日快乐！对不起，我们和好吧.我不该总是试图去改变你，是我的不对，爱人之间应该相互改变，未来的路我们一起走，我爱你，未来的路再难走，我们也会一路扶持，这些小事未来不会成为让你失落的原因。我爱你，亲爱的，生日快乐！";
+            // 逐字显示文本，将每个字的显示间隔增加到200毫秒
+            const text = "亲爱的，生日快乐！对不起，我们和好吧.我不该总是试图去改变你，是我的不对，爱人之间应该相互改变，未来的路我们一起走，未来的路再难走，我们也会一路扶持，这些小事未来不会成为你失落的原因。我爱你，亲爱的，生日快乐！";
             let index = 0;
 
             function typeLetter() {
                 if (index < text.length) {
                     letter.textContent = text.substring(0, index + 1);
                     index++;
-                    setTimeout(typeLetter, 100);
+                    setTimeout(typeLetter, 200); // 将打字速度从100毫秒改为200毫秒
                 }
             }
 
             typeLetter();
-        }, 1000);
-    }, 1000);
+        }, 4000); // 将信纸显示延迟从1秒改为4秒
+    }, 3000); // 将信封打开延迟从1秒改为3秒
 }
 
 // 更新样式
