@@ -23,24 +23,31 @@ class Firework {
     }
 
     createParticles() {
-        const particleCount = 150; // 增加粒子数量
+        const container = ensureFireworksContainer();
+        const particleCount = 150;
         const angleStep = (Math.PI * 2) / particleCount;
-        const velocityBase = 8; // 增加基础速度
+        const velocityBase = 8;
 
         for (let i = 0; i < particleCount; i++) {
             const angle = angleStep * i;
-            // 随机化速度和大小
             const velocity = velocityBase + (Math.random() - 0.5) * 3;
             const size = 2 + Math.random() * 2;
             
             const particle = document.createElement('div');
             particle.className = 'firework-particle';
             
-            // 使用 HSL 颜色以创建更绚丽的效果
             const hue = this.hue + Math.random() * 30 - 15;
-            particle.style.backgroundColor = `hsl(${hue}, 100%, 60%)`;
-            particle.style.width = `${size}px`;
-            particle.style.height = `${size}px`;
+            particle.style.cssText = `
+                position: absolute;
+                left: ${this.x}px;
+                top: ${this.y}px;
+                width: ${size}px;
+                height: ${size}px;
+                background-color: hsl(${hue}, 100%, 60%);
+                border-radius: 50%;
+                pointer-events: none;
+                mix-blend-mode: screen;
+            `;
             
             this.particles.push({
                 element: particle,
@@ -48,7 +55,6 @@ class Firework {
                 y: this.y,
                 velocity: velocity,
                 angle: angle,
-                // 添加随机扩散效果
                 spread: Math.random() * 0.2 - 0.1,
                 alpha: 1,
                 decay: 0.01 + Math.random() * 0.01,
@@ -56,38 +62,36 @@ class Firework {
                 hue: hue
             });
             
-            document.getElementById('fireworks-container').appendChild(particle);
+            container.appendChild(particle);
         }
     }
 
     animate() {
+        if (this.particles.length === 0) return;
+
         this.particles.forEach(particle => {
-            // 应用扩散效果
             particle.angle += particle.spread;
             particle.velocity *= 0.98;
             
-            // 计算新位置
             particle.x += Math.cos(particle.angle) * particle.velocity;
             particle.y += Math.sin(particle.angle) * particle.velocity + particle.gravity;
             
-            // 更新颜色和透明度
             particle.alpha -= particle.decay;
+            
+            particle.element.style.transform = `translate(${particle.x - this.x}px, ${particle.y - this.y}px)`;
             particle.element.style.opacity = particle.alpha;
-            
-            // 添加轨迹发光效果
-            particle.element.style.boxShadow = `0 0 ${6 + Math.random() * 4}px hsl(${particle.hue}, 100%, 70%)`;
-            
-            // 更新位置
-            particle.element.style.transform = `translate(${particle.x}px, ${particle.y}px)`;
         });
         
-        // 移除消失的粒子
-        this.particles = this.particles.filter(particle => particle.alpha > 0);
+        this.particles = this.particles.filter(particle => {
+            if (particle.alpha <= 0) {
+                particle.element.remove();
+                return false;
+            }
+            return true;
+        });
         
         if (this.particles.length > 0) {
             requestAnimationFrame(() => this.animate());
-        } else {
-            this.particles.forEach(particle => particle.element.remove());
         }
     }
 }
@@ -413,9 +417,34 @@ function showGiftBox() {
     };
 }
 
+// 确保有烟花容器
+function ensureFireworksContainer() {
+    let container = document.getElementById('fireworks-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'fireworks-container';
+        container.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        `;
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
 // 修改烟花大结局函数
 function startGrandFinale() {
     console.log('开始烟花表演');
+    
+    // 确保有烟花容器
+    ensureFireworksContainer();
+    
+    // 清除现有效果
     animationManager.clearEffects();
     
     let startTime = Date.now();
@@ -429,12 +458,13 @@ function startGrandFinale() {
         for (let i = 0; i < 3; i++) {
             const x = Math.random() * window.innerWidth;
             const y = window.innerHeight * (0.2 + Math.random() * 0.3);
-            new Firework(x, y);
+            const firework = new Firework(x, y);
+            firework.animate(); // 确保调用 animate
         }
         
         // 如果未到10秒，继续创建烟花
         if (elapsed < duration) {
-            setTimeout(createFireworks, 300);
+            requestAnimationFrame(() => setTimeout(createFireworks, 300));
         } else {
             // 10秒后显示蛋糕
             showBirthdayCake();
@@ -445,7 +475,7 @@ function startGrandFinale() {
     createFireworks();
 }
 
-// 修改蛋糕显示函数
+// 修改蛋糕显示函数，调整文字大小
 function showBirthdayCake() {
     console.log('显示蛋糕');
     
@@ -464,18 +494,18 @@ function showBirthdayCake() {
     `;
     
     cake.innerHTML = `
-        <div class="cake-emoji" style="font-size: 150px; margin-bottom: 30px;">🎂</div>
+        <div class="cake-emoji" style="font-size: 120px; margin-bottom: 20px;">🎂</div>
         <div class="birthday-text" style="
             font-family: 'Dancing Script', cursive;
-            font-size: 5em;
+            font-size: 3em;  /* 调整文字大小 */
             color: #fff;
             text-shadow: 0 0 20px #ff69b4;
+            white-space: nowrap;  /* 确保文字在一行 */
         ">生日快乐！</div>
     `;
     
     document.body.appendChild(cake);
     
-    // 确保蛋糕显示在中间
     requestAnimationFrame(() => {
         cake.classList.add('show');
         const text = cake.querySelector('.birthday-text');
