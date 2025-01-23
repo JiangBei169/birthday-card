@@ -2,7 +2,7 @@
 const CONFIG = {
     password: '1227',
     totalImages: 45,
-    slideInterval: 5000,
+    slideInterval: 1000,
     autoPlayMusic: true,
     sakuraCount: 100,
     musicVolume: 0.5
