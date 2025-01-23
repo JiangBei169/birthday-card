@@ -392,6 +392,7 @@ body {
     text-align: center;
     opacity: 0;
     transition: all 1s ease;
+    z-index: 1000;
 }
 
 .cake.show {
@@ -1000,4 +1001,104 @@ body {
 
 .gift-box:hover {
     transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* 信封和信纸样式更新 */
+.envelope {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 300px;
+    height: 200px;
+    background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    transition: all 1s ease;
+    cursor: pointer;
+    overflow: hidden;
+    z-index: 1000;
+}
+
+.envelope.open {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.envelope-front {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.envelope-flap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: linear-gradient(45deg, #fad0c4 0%, #ff9a9e 99%, #ff9a9e 100%);
+    transform-origin: top;
+    transition: transform 1s ease;
+}
+
+.envelope.open .envelope-flap {
+    transform: rotateX(180deg);
+}
+
+.envelope-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    font-family: 'Dancing Script', cursive;
+}
+
+.letter {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 600px;
+    min-height: 300px;
+    padding: 40px;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    font-family: 'Dancing Script', cursive;
+    font-size: 28px;
+    line-height: 1.8;
+    color: #ff6b6b;
+    opacity: 0;
+    animation: fadeIn 1s ease forwards;
+    white-space: pre-wrap;
+    text-align: center;
+    overflow-y: auto;
+    max-height: 80vh;
+    z-index: 1000;
+}
+
+/* 移动端适配更新 */
+@media (max-width: 768px) {
+    .cake-emoji {
+        font-size: 100px;
+    }
+
+    .birthday-text {
+        font-size: 3em;
+    }
+
+    .envelope {
+        width: 90%;
+        max-width: 300px;
+    }
+
+    .letter {
+        width: 90%;
+        padding: 20px;
+        font-size: 24px;
+    }
 }
