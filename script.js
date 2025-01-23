@@ -405,6 +405,8 @@ function showGiftBox() {
         giftBox.style.opacity = '0';
         setTimeout(() => {
             giftBox.remove();
+            // 确保清除所有现有效果
+            animationManager.clearEffects();
             // 开始烟花表演
             startGrandFinale();
         }, 1000);
@@ -416,14 +418,12 @@ function startGrandFinale() {
     console.log('开始烟花表演');
     animationManager.clearEffects();
     
-    let fireworksCount = 0;
-    const maxFireworks = 50; // 总烟花数量
+    let startTime = Date.now();
+    const duration = 10000; // 10秒
     
-    function createFirework() {
-        if (fireworksCount >= maxFireworks) {
-            showBirthdayCake();
-            return;
-        }
+    function createFireworks() {
+        const currentTime = Date.now();
+        const elapsed = currentTime - startTime;
         
         // 创建多个烟花
         for (let i = 0; i < 3; i++) {
@@ -432,32 +432,83 @@ function startGrandFinale() {
             new Firework(x, y);
         }
         
-        fireworksCount += 3;
-        setTimeout(createFirework, 300);
+        // 如果未到10秒，继续创建烟花
+        if (elapsed < duration) {
+            setTimeout(createFireworks, 300);
+        } else {
+            // 10秒后显示蛋糕
+            showBirthdayCake();
+        }
     }
     
-    createFirework();
+    // 开始创建烟花
+    createFireworks();
 }
 
-// 改进的蛋糕显示函数
+// 修改蛋糕显示函数
 function showBirthdayCake() {
+    console.log('显示蛋糕');
+    
+    // 先清除所有烟花
+    document.getElementById('fireworks-container').innerHTML = '';
+    
     const cake = document.createElement('div');
     cake.className = 'cake';
-    cake.innerHTML = `
-        <div class="cake-emoji">🎂</div>
-        <div class="birthday-text">生日快乐！</div>
+    cake.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        z-index: 1000;
     `;
+    
+    cake.innerHTML = `
+        <div class="cake-emoji" style="font-size: 150px; margin-bottom: 30px;">🎂</div>
+        <div class="birthday-text" style="
+            font-family: 'Dancing Script', cursive;
+            font-size: 5em;
+            color: #fff;
+            text-shadow: 0 0 20px #ff69b4;
+        ">生日快乐！</div>
+    `;
+    
     document.body.appendChild(cake);
     
-    // 使用 RAF 确保过渡动画正常工作
+    // 确保蛋糕显示在中间
     requestAnimationFrame(() => {
         cake.classList.add('show');
+        const text = cake.querySelector('.birthday-text');
         setTimeout(() => {
-            const text = cake.querySelector('.birthday-text');
             text.classList.add('show');
         }, 500);
     });
 }
+
+// 添加相关的 CSS
+const style = document.createElement('style');
+style.textContent = `
+    .cake {
+        opacity: 0;
+        transition: opacity 1s ease;
+    }
+    
+    .cake.show {
+        opacity: 1;
+    }
+    
+    .birthday-text {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 1s ease;
+    }
+    
+    .birthday-text.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+`;
+document.head.appendChild(style);
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
