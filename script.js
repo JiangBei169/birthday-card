@@ -2,7 +2,7 @@
 const CONFIG = {
     password: '1227',
     totalImages: 45,
-    slideInterval: 1000,
+    slideInterval: 3000,
     autoPlayMusic: true,
     sakuraCount: 100,
     musicVolume: 0.5
@@ -503,7 +503,7 @@ function showBirthdayCake() {
         setTimeout(() => {
             cake.querySelector('.birthday-text').classList.add('show');
             // 10秒后显示信封
-            setTimeout(showLetter, 10000);
+            setTimeout(showLetter, 5000);
         }, 500);
     });
 }
