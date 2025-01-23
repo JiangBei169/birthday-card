@@ -24,26 +24,26 @@ class Firework {
 
     createParticles() {
         const container = ensureFireworksContainer();
-        const particleCount = 150;
+        const particleCount = 80; // 减少粒子数量
         const angleStep = (Math.PI * 2) / particleCount;
-        const velocityBase = 8;
 
         for (let i = 0; i < particleCount; i++) {
-            const angle = angleStep * i;
-            const velocity = velocityBase + (Math.random() - 0.5) * 3;
-            const size = 2 + Math.random() * 2;
+            const angle = angleStep * i + (Math.random() - 0.5) * 0.5;
+            const velocity = 6 + Math.random() * 2;
+            const size = 2 + Math.random() * 1.5;
             
             const particle = document.createElement('div');
             particle.className = 'firework-particle';
             
-            const hue = this.hue + Math.random() * 30 - 15;
+            const hue = this.hue + Math.random() * 20 - 10;
             particle.style.cssText = `
                 position: absolute;
                 left: ${this.x}px;
                 top: ${this.y}px;
                 width: ${size}px;
                 height: ${size}px;
-                background-color: hsl(${hue}, 100%, 60%);
+                background-color: hsl(${hue}, 100%, 70%);
+                box-shadow: 0 0 ${size * 2}px hsl(${hue}, 100%, 70%);
                 border-radius: 50%;
                 pointer-events: none;
                 mix-blend-mode: screen;
@@ -55,11 +55,8 @@ class Firework {
                 y: this.y,
                 velocity: velocity,
                 angle: angle,
-                spread: Math.random() * 0.2 - 0.1,
-                alpha: 1,
-                decay: 0.01 + Math.random() * 0.01,
-                gravity: 0.1,
-                hue: hue
+                decay: 0.015 + Math.random() * 0.01,
+                gravity: 0.12
             });
             
             container.appendChild(particle);
@@ -67,16 +64,11 @@ class Firework {
     }
 
     animate() {
-        if (this.particles.length === 0) return;
-
         this.particles.forEach(particle => {
-            particle.angle += particle.spread;
-            particle.velocity *= 0.98;
-            
+            particle.velocity *= 0.97;
             particle.x += Math.cos(particle.angle) * particle.velocity;
             particle.y += Math.sin(particle.angle) * particle.velocity + particle.gravity;
-            
-            particle.alpha -= particle.decay;
+            particle.alpha = Math.max(0, 1 - particle.decay * 20);
             
             particle.element.style.transform = `translate(${particle.x - this.x}px, ${particle.y - this.y}px)`;
             particle.element.style.opacity = particle.alpha;
@@ -440,82 +432,107 @@ function ensureFireworksContainer() {
 // 修改烟花大结局函数
 function startGrandFinale() {
     console.log('开始烟花表演');
-    
-    // 确保有烟花容器
     ensureFireworksContainer();
-    
-    // 清除现有效果
     animationManager.clearEffects();
     
     let startTime = Date.now();
-    const duration = 10000; // 10秒
+    const duration = 10000;
     
     function createFireworks() {
         const currentTime = Date.now();
         const elapsed = currentTime - startTime;
         
-        // 创建多个烟花
-        for (let i = 0; i < 3; i++) {
+        // 每次只创建1-2个烟花
+        const count = Math.random() < 0.5 ? 1 : 2;
+        for (let i = 0; i < count; i++) {
             const x = Math.random() * window.innerWidth;
-            const y = window.innerHeight * (0.2 + Math.random() * 0.3);
+            const y = window.innerHeight * (0.3 + Math.random() * 0.3);
             const firework = new Firework(x, y);
-            firework.animate(); // 确保调用 animate
+            firework.animate();
         }
         
-        // 如果未到10秒，继续创建烟花
         if (elapsed < duration) {
-            requestAnimationFrame(() => setTimeout(createFireworks, 300));
+            setTimeout(createFireworks, 400 + Math.random() * 200);
         } else {
-            // 10秒后显示蛋糕
             showBirthdayCake();
         }
     }
     
-    // 开始创建烟花
     createFireworks();
 }
 
-// 修改蛋糕显示函数，调整文字大小
+// 修改蛋糕显示函数，添加信封动画
 function showBirthdayCake() {
     console.log('显示蛋糕');
-    
-    // 先清除所有烟花
     document.getElementById('fireworks-container').innerHTML = '';
     
     const cake = document.createElement('div');
     cake.className = 'cake';
-    cake.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        text-align: center;
-        z-index: 1000;
-    `;
-    
     cake.innerHTML = `
-        <div class="cake-emoji" style="font-size: 120px; margin-bottom: 20px;">🎂</div>
-        <div class="birthday-text" style="
-            font-family: 'Dancing Script', cursive;
-            font-size: 3em;  /* 调整文字大小 */
-            color: #fff;
-            text-shadow: 0 0 20px #ff69b4;
-            white-space: nowrap;  /* 确保文字在一行 */
-        ">生日快乐！</div>
+        <div class="cake-emoji">🎂</div>
+        <div class="birthday-text">生日快乐！</div>
     `;
-    
     document.body.appendChild(cake);
     
     requestAnimationFrame(() => {
         cake.classList.add('show');
-        const text = cake.querySelector('.birthday-text');
         setTimeout(() => {
-            text.classList.add('show');
+            cake.querySelector('.birthday-text').classList.add('show');
+            // 10秒后显示信封
+            setTimeout(showLetter, 10000);
         }, 500);
     });
 }
 
-// 添加相关的 CSS
+// 添加信封动画
+function showLetter() {
+    // 创建打字声音
+    const typeSound = new Audio('type-sound.mp3'); // 需要添加打字音效文件
+    typeSound.volume = 0.3;
+
+    // 淡出蛋糕
+    const cake = document.querySelector('.cake');
+    if (cake) {
+        cake.style.opacity = '0';
+        setTimeout(() => cake.remove(), 1000);
+    }
+
+    // 创建信封
+    const envelope = document.createElement('div');
+    envelope.className = 'envelope';
+    envelope.innerHTML = '✉️';
+    document.body.appendChild(envelope);
+
+    // 信封打开动画
+    setTimeout(() => {
+        envelope.classList.add('open');
+        
+        // 显示信纸
+        setTimeout(() => {
+            const letter = document.createElement('div');
+            letter.className = 'letter';
+            document.body.appendChild(letter);
+
+            // 逐字显示文本
+            const text = "亲爱的，生日快乐！对不起，我们和好吧.我不该总是试图去改变你，是我的不对，爱人之间应该相互改变，未来的路我们一起走，我爱你，未来的路再难走，我们也会一路扶持，这些小事未来不会成为让你失落的原因。我爱你，亲爱的，生日快乐！";
+            let index = 0;
+
+            function typeLetter() {
+                if (index < text.length) {
+                    letter.textContent += text[index];
+                    typeSound.currentTime = 0;
+                    typeSound.play();
+                    index++;
+                    setTimeout(typeLetter, 200);
+                }
+            }
+
+            typeLetter();
+        }, 1000);
+    }, 1000);
+}
+
+// 添加相关样式
 const style = document.createElement('style');
 style.textContent = `
     .cake {
@@ -536,6 +553,40 @@ style.textContent = `
     .birthday-text.show {
         opacity: 1;
         transform: translateY(0);
+    }
+
+    .envelope {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        font-size: 100px;
+        transition: all 1s ease;
+        cursor: pointer;
+    }
+
+    .envelope.open {
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .letter {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 30px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        font-size: 24px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        opacity: 0;
+        animation: fadeIn 1s ease forwards;
+    }
+
+    @keyframes fadeIn {
+        to { opacity: 1; }
     }
 `;
 document.head.appendChild(style);
