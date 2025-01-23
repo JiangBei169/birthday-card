@@ -19,6 +19,10 @@ class Firework {
         this.y = y;
         this.particles = [];
         this.hue = Math.random() * 360;
+        this.fadeOut = false;
+        this.fadeOutDuration = 1000; // 1秒淡出时间
+        this.createTime = Date.now(); // 记录创建时间
+        this.lifetime = 5000; // 烟花存在5秒
         this.createParticles();
     }
 
@@ -64,6 +68,29 @@ class Firework {
     }
 
     animate() {
+        const currentTime = Date.now();
+        
+        // 检查是否需要开始淡出
+        if (!this.fadeOut && currentTime - this.createTime >= this.lifetime) {
+            this.fadeOut = true;
+            this.fadeOutStartTime = currentTime;
+        }
+
+        if (this.fadeOut) {
+            const fadeProgress = (currentTime - this.fadeOutStartTime) / this.fadeOutDuration;
+            
+            if (fadeProgress >= 1) {
+                this.particles.forEach(particle => particle.element.remove());
+                this.particles = [];
+                return;
+            }
+            
+            const opacity = 1 - fadeProgress;
+            this.particles.forEach(particle => {
+                particle.element.style.opacity = opacity * particle.alpha;
+            });
+        }
+
         this.particles.forEach(particle => {
             particle.velocity *= 0.97;
             particle.x += Math.cos(particle.angle) * particle.velocity;
@@ -71,15 +98,9 @@ class Firework {
             particle.alpha = Math.max(0, 1 - particle.decay * 20);
             
             particle.element.style.transform = `translate(${particle.x - this.x}px, ${particle.y - this.y}px)`;
-            particle.element.style.opacity = particle.alpha;
-        });
-        
-        this.particles = this.particles.filter(particle => {
-            if (particle.alpha <= 0) {
-                particle.element.remove();
-                return false;
+            if (!this.fadeOut) {
+                particle.element.style.opacity = particle.alpha;
             }
-            return true;
         });
         
         if (this.particles.length > 0) {
@@ -474,7 +495,10 @@ function showBirthdayCake() {
     `;
     document.body.appendChild(cake);
     
+    // 确保蛋糕在屏幕中央
     requestAnimationFrame(() => {
+        const cakeHeight = cake.offsetHeight;
+        cake.style.top = `${(window.innerHeight - cakeHeight) / 2}px`;
         cake.classList.add('show');
         setTimeout(() => {
             cake.querySelector('.birthday-text').classList.add('show');
@@ -486,11 +510,6 @@ function showBirthdayCake() {
 
 // 添加信封动画
 function showLetter() {
-    // 创建打字声音
-    const typeSound = new Audio('type-sound.mp3'); // 需要添加打字音效文件
-    typeSound.volume = 0.3;
-
-    // 淡出蛋糕
     const cake = document.querySelector('.cake');
     if (cake) {
         cake.style.opacity = '0';
@@ -500,7 +519,12 @@ function showLetter() {
     // 创建信封
     const envelope = document.createElement('div');
     envelope.className = 'envelope';
-    envelope.innerHTML = '✉️';
+    envelope.innerHTML = `
+        <div class="envelope-front">
+            <div class="envelope-flap"></div>
+            <div class="envelope-content">To: My Love ❤️</div>
+        </div>
+    `;
     document.body.appendChild(envelope);
 
     // 信封打开动画
@@ -519,11 +543,9 @@ function showLetter() {
 
             function typeLetter() {
                 if (index < text.length) {
-                    letter.textContent += text[index];
-                    typeSound.currentTime = 0;
-                    typeSound.play();
+                    letter.textContent = text.substring(0, index + 1);
                     index++;
-                    setTimeout(typeLetter, 200);
+                    setTimeout(typeLetter, 100);
                 }
             }
 
@@ -532,41 +554,58 @@ function showLetter() {
     }, 1000);
 }
 
-// 添加相关样式
-const style = document.createElement('style');
-style.textContent = `
-    .cake {
-        opacity: 0;
-        transition: opacity 1s ease;
-    }
-    
-    .cake.show {
-        opacity: 1;
-    }
-    
-    .birthday-text {
-        opacity: 0;
-        transform: translateY(30px);
-        transition: all 1s ease;
-    }
-    
-    .birthday-text.show {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
+// 更新样式
+const newStyle = document.createElement('style');
+newStyle.textContent = `
     .envelope {
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%) scale(0);
-        font-size: 100px;
+        width: 300px;
+        height: 200px;
+        background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         transition: all 1s ease;
         cursor: pointer;
+        overflow: hidden;
     }
 
     .envelope.open {
         transform: translate(-50%, -50%) scale(1);
+    }
+
+    .envelope-front {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+
+    .envelope-flap {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 50%;
+        background: linear-gradient(45deg, #fad0c4 0%, #ff9a9e 99%, #ff9a9e 100%);
+        transform-origin: top;
+        transition: transform 1s ease;
+    }
+
+    .envelope.open .envelope-flap {
+        transform: rotateX(180deg);
+    }
+
+    .envelope-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 24px;
+        color: #fff;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        font-family: 'Dancing Script', cursive;
     }
 
     .letter {
@@ -574,22 +613,41 @@ style.textContent = `
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        padding: 30px;
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(0,0,0,0.2);
-        font-size: 24px;
-        line-height: 1.5;
-        white-space: pre-wrap;
+        width: 80%;
+        max-width: 600px;
+        min-height: 300px; /* 确保有足够的高度显示所有文字 */
+        padding: 40px;
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        font-family: 'Dancing Script', cursive;
+        font-size: 28px;
+        line-height: 1.8;
+        color: #ff6b6b;
         opacity: 0;
         animation: fadeIn 1s ease forwards;
+        white-space: pre-wrap;
+        text-align: center;
+        overflow-y: auto; /* 如果内容过多允许滚动 */
+        max-height: 80vh; /* 最大高度为视窗高度的80% */
     }
 
     @keyframes fadeIn {
         to { opacity: 1; }
     }
+
+    .cake {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        opacity: 0;
+        transition: all 1s ease;
+    }
 `;
-document.head.appendChild(style);
+
+document.head.appendChild(newStyle);
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
